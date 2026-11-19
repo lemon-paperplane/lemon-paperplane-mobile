@@ -1,0 +1,1 @@
+{"result":{"runId":"d3d6e5b54cd0c9be","state":"exited","samples":[{"t":1794982484619,"cpu":0,"rssMB":24.1},{"t":1794982486618,"cpu":0,"rssMB":24.1},{"t":1794982488599,"cpu":0,"rssMB":24.1},{"t":1794982490632,"cpu":0,"rssMB":24.1}],"processes":[],"cpu":0,"rssMB":0,"peakRSSMB":24.1,"ports":[47311],"uptimeSec":8,"intervalMs":2000}}

@@ -1,0 +1,2 @@
+{"result":{"locale":"system","theme":"system","mirrorRegion":"auto","autoInstallToolchains":true,"autoInstallDependencies":true,"autoSyncOnImport":true,"pluginIdleSeconds":60,"logLinesPerRun":20000,"logRetentionRuns":20,"apiPort":47213,"gitAutoFetchMinutes":0,
+"editor":{"keymap":"","theme":"","fontSize":14,"fontFamily":"JetBrains Mono","tabSize":2,"insertSpaces":true,"wordWrap":false,"autoSave":"onFocusChange","trimTrailingWhitespace":true,"insertFinalNewline":true}}}

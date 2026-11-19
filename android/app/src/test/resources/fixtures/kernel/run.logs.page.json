@@ -1,0 +1,1 @@
+{"result":{"lines":[{"seq":1,"t":0,"s":"","text":"\u001b[32mStarting\u001b[0m app"},{"seq":2,"t":0,"s":"","text":"listening on :8080"},{"seq":3,"t":1794969048189,"s":"stderr","text":"warn: slow"}],"lastSeq":12000,"firstSeq":1,"total":3,"truncated":false}}

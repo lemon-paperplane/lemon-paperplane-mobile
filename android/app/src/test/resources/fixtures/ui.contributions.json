@@ -1,0 +1,7 @@
+{"result":{"facets":[{"id":"gradle","name":"Gradle","icon":"plugin:gradle/icons/gradle.svg","category":"buildSystem","plugin":"gradle"}],
+"toolchainKinds":[{"kind":"jdk","name":"JDK","icon":"plugin:java/icons/java.svg","installable":true,"plugin":"java"}],
+"runConfigTypes":[{"id":"spring-boot","name":"Spring Boot","icon":"icons/spring.svg","facets":["spring-boot"],"options":[{"key":"mainClass","title":"主类","type":"string","required":true},{"key":"profiles","title":"Profiles","type":"multiselect","optionsFrom":"profiles","info":"激活的 profile"},{"key":"jvmArgs","title":"JVM 参数","type":"list","advanced":true},{"key":"port","title":"端口","type":"number","default":8080}],"plugin":"spring-boot"}],
+"views":[{"id":"endpoints","title":"端点","icon":"icons/endpoints.svg","location":"run.panel","runState":"running","plugin":"spring-boot"},{"id":"docker","title":"Docker","location":"sidebar","kind":"webview","entry":"web/index.html","order":5,"plugin":"docker"}],
+"actions":[{"id":"clean","title":"清理","icon":"builtin:trash-2","facets":["gradle"],"group":"build","locations":["card.menu","project.menu"],"plugin":"gradle"},{"id":"deps","title":"刷新依赖","plugin":"gradle","form":[{"key":"offline","title":"离线","type":"boolean"}]}],
+"settings":[{"plugin":"gradle","title":"Gradle","fields":[{"key":"daemon","title":"使用 Gradle daemon","type":"boolean","default":true}],"values":{"daemon":true}}],
+"vcs":[{"id":"git","name":"Git","rootMarker":".git","plugin":"git"}]}}

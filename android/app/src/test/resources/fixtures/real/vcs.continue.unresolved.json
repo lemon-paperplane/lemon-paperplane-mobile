@@ -1,0 +1,12 @@
+{
+ "result": {
+  "ok": false,
+  "message": "还有未解决的冲突",
+  "conflicts": [
+   "both.txt",
+   "del.txt",
+   "f.txt"
+  ],
+  "reason": "unresolvedConflicts"
+ }
+}

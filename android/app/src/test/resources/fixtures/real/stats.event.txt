@@ -1,0 +1,1 @@
+data: {"type":"stats","data":[{"id":"d3d6e5b54cd0c9be","projectId":"6a16998ec83a0ff4","configId":"f1c08aca844a","name":"main","state":"running","urls":["http://127.0.0.1:47311/"],"cpu":0,"rssMB":24.1,"peakRSSMB":24.1,"procs":1,"t":1794982484619}]}

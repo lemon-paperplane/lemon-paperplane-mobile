@@ -1,0 +1,10 @@
+{
+ "result": [
+  {
+   "path": "/Users/me/Code/demo",
+   "relPath": ".",
+   "vcs": "git",
+   "plugin": "git"
+  }
+ ]
+}

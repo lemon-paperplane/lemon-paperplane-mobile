@@ -1,0 +1,1 @@
+{"result":{"remotes":[{"name":"origin","fetchUrl":"git@github.com:lemon-paperplane/demo.git","webUrl":"https://github.com/lemon-paperplane/demo"},{"name":"mirror","fetchUrl":"https://example.com/demo.git","pushUrl":"https://example.com/push.git"}]}}

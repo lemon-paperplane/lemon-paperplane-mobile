@@ -1,0 +1,14 @@
+{
+ "result": {
+  "path": "logo.png",
+  "binary": true,
+  "hunks": [],
+  "mode": "head",
+  "context": 3,
+  "status": "M",
+  "oldMode": "100644",
+  "newMode": "100644",
+  "additions": 0,
+  "deletions": 0
+ }
+}

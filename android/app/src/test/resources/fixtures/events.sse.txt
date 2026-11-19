@@ -1,0 +1,12 @@
+data: {"type":"hello","data":{"version":"0.1.0","os":"darwin","arch":"arm64","pid":1,"startedAt":"2026-11-18T09:39:12Z","dataDir":"/d","apiBase":"http://127.0.0.1:47213","mcpUrl":"","executable":"","memoryMB":20,"pluginProcs":0,"pluginMemoryMB":0,"locale":"en","mirrorRegion":"global"}}
+
+: ping
+
+data: {"type":"stats","data":[{"id":"r1","configId":"c1","name":"Application","state":"running","cpu":2.5,"rssMB":500}]}
+
+data: {"type":"prompt","data":{"id":"pr1","title":"Git 凭据","message":"https://github.com","fields":[{"key":"username","title":"用户名","type":"string"},{"key":"password","title":"密码","type":"string"}],"okText":"登录","plugin":"git"}}
+
+data: {"type":"project.removed","data":{"id":"p9"}}
+
+data: {"type":"toolchains.changed","data":null}
+

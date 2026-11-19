@@ -1,0 +1,10 @@
+data: {"lines":[{"seq":18,"t":1794969053203,"s":"stdout","text":"\u001b[33mtick 7\u001b[0m"},{"seq":19,"t":1794969054203,"s":"stderr","text":"oops"}]}
+
+: ping
+
+data: {"lines":[]}
+
+data: {"lines":[{"seq":20,"t":1794969055203,"s":"system","text":"进程已退出（退出码 0）"}]}
+
+event: end
+data: {}

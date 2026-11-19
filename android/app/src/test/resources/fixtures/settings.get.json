@@ -1,0 +1,1 @@
+{"result":{"locale":"system","theme":"dark","mirrorRegion":"auto","autoInstallToolchains":true,"autoInstallDependencies":true,"pluginIdleSeconds":60,"logLinesPerRun":20000,"logRetentionRuns":20,"apiPort":47213,"gitAutoFetchMinutes":0,"pluginSettings":{"gradle":{"daemon":true}}}}

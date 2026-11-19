@@ -1,0 +1,1 @@
+{"result":[{"time":"2026-11-20T10:00:01.123+08:00","event":"op","ip":"192.168.31.20","who":"Pixel 9","detail":"run.start"},{"time":"2026-11-20T09:59:00+08:00","event":"login.fail","ip":"10.0.0.8","who":"admin"},{"time":"2026-11-20T09:00:00+08:00","event":"config","detail":"port=47290"}]}

@@ -1,0 +1,14 @@
+event: state
+data: {"id":"t1","workspaceId":"ws1","projectId":"p1","name":"demo","cwd":"/Users/me/Code/demo","shell":"/bin/zsh","pid":4242,"cols":120,"rows":32,"startedAt":"2026-11-20T09:00:00Z","output":10}
+
+data: {"o":0,"d":"bHMNCg=="}
+
+: ping
+
+data: {"o":4,"d":"5Lit"}
+
+event: state
+data: {"id":"t1","name":"demo","cwd":"/Users/me/Code/demo","shell":"/bin/zsh","cols":120,"rows":32,"startedAt":"2026-11-20T09:00:00Z","exited":true,"exitCode":1,"output":10}
+
+event: closed
+data: {}

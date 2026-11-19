@@ -1,0 +1,2 @@
+{"result":[{"id":"t1","kind":"toolchain","title":"下载 JDK 17","state":"running","message":"42 MB / 190 MB","percent":22.1,"startedAt":"2026-11-18T09:42:00Z"},
+{"id":"t2","kind":"action","title":"清理构建","projectId":"p1","moduleId":"m1","state":"succeeded","percent":100,"startedAt":"2026-11-18T09:42:00Z","endedAt":"2026-11-18T09:42:03Z","result":{"message":"已清理","openUrl":""}}]}

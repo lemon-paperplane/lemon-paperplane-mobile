@@ -1,0 +1,12 @@
+{"result":[
+ {"id":"p1","name":"vrtalk-api","path":"/Users/me/Code/vrtalk/vrtalk-api","workspaceId":"ws_default",
+  "facets":[{"id":"gradle","name":"Gradle","icon":"plugin:gradle/icons/gradle.svg","category":"buildSystem","plugin":"gradle"},{"id":"spring-boot","name":"Spring Boot","icon":"plugin:spring-boot/icons/spring.svg","plugin":"spring-boot"}],
+  "info":[{"label":"Gradle","value":"8.12"},{"label":"Java","value":"17"}],
+  "status":"running",
+  "runs":[{"id":"r1","configId":"c1","name":"Application","state":"running","urls":["http://localhost:8080"],"cpu":3.5,"rssMB":512.2}],
+  "configs":[{"id":"c1","name":"Application","type":"spring-boot","icon":"plugin:spring-boot/icons/spring.svg","moduleId":"m1"}],
+  "defaultConfigId":"c1",
+  "vcs":{"branch":"main","ahead":1,"behind":0,"changes":3,"roots":1,"at":"2026-11-18T09:40:00.5Z"},
+  "problems":1,"problemSeverity":"warning","missingToolchains":["jdk 17"],"dependencies":"ok"},
+ {"id":"p2","name":"web","path":"/Users/me/Code/web","workspaceId":"ws_default","facets":null,"status":"idle","configs":null,"problems":0}
+]}

@@ -1,0 +1,14 @@
+{"result":{"facets":[{"id":"java","name":"Java","icon":"plugin:java/icons/java.svg","plugin":"java"}],
+"languages":[
+ {"id":"java","name":"Java","extensions":[".java"],"module":"editor/lang-java.js","lineComment":"//","blockComment":["/*","*/"],"plugin":"java"},
+ {"id":"typescript","name":"TypeScript","extensions":[".ts",".mts"],"plugin":"nodejs","priority":1},
+ {"id":"tsdecl","name":"TS Declarations","extensions":[".d.ts"],"plugin":"nodejs"},
+ {"id":"dockerfile","name":"Dockerfile","filenames":["Dockerfile"],"filenamePatterns":["Dockerfile.*","*.dockerfile"],"plugin":"languages"},
+ {"id":"plain-ts","name":"TS (generic)","extensions":["ts"],"plugin":"languages","priority":0}
+],
+"keymaps":[
+ {"id":"eclipse-macos","name":"Eclipse (macOS)","platform":"macos","file":"keymaps/eclipse-macos.json","plugin":"keymap-eclipse"},
+ {"id":"eclipse-windows","name":"Eclipse","platform":"windows","file":"keymaps/eclipse-windows.json","plugin":"keymap-eclipse"},
+ {"id":"vim","name":"Vim","platform":"any","module":"editor/keymap-vim.js","base":"eclipse-macos","plugin":"keymap-vim"}
+],
+"editorThemes":[{"id":"darcula","name":"Darcula","kind":"dark","file":"themes/darcula.json","plugin":"themes"}]}}

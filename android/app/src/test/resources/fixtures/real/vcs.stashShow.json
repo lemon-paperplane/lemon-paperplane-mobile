@@ -1,0 +1,32 @@
+{
+ "result": {
+  "hash": "c888405db4d14c5729321d21a3bfc292e6cc423a",
+  "files": [
+   {
+    "path": "docs/guide.md",
+    "status": "D",
+    "deletions": 1
+   },
+   {
+    "path": "logo.png",
+    "status": "M",
+    "binary": true
+   },
+   {
+    "path": "src/a.txt",
+    "status": "M",
+    "additions": 2,
+    "deletions": 1
+   },
+   {
+    "path": "src/staged.txt",
+    "status": "A",
+    "additions": 1
+   }
+  ],
+  "untracked": [
+   "docs/中文 名.md",
+   "notes.txt"
+  ]
+ }
+}

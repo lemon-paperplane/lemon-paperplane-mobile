@@ -1,0 +1,30 @@
+{
+ "result": {
+  "refs": [
+   {
+    "name": "feature/login",
+    "kind": "local"
+   },
+   {
+    "name": "main",
+    "kind": "local"
+   },
+   {
+    "name": "origin/feature/login",
+    "kind": "remote"
+   },
+   {
+    "name": "origin/main",
+    "kind": "remote"
+   },
+   {
+    "name": "v1.0",
+    "kind": "tag"
+   },
+   {
+    "name": "v1.1",
+    "kind": "tag"
+   }
+  ]
+ }
+}

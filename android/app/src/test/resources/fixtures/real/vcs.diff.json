@@ -1,0 +1,69 @@
+{
+ "result": {
+  "path": "src/a.txt",
+  "hunks": [
+   {
+    "header": "@@ -1,6 +1,7 @@",
+    "oldStart": 1,
+    "oldLines": 6,
+    "newStart": 1,
+    "newLines": 7,
+    "lines": [
+     {
+      "kind": " ",
+      "old": 1,
+      "new": 1,
+      "text": "line1"
+     },
+     {
+      "kind": "-",
+      "old": 2,
+      "text": "line2"
+     },
+     {
+      "kind": "+",
+      "new": 2,
+      "text": "line2 modified"
+     },
+     {
+      "kind": " ",
+      "old": 3,
+      "new": 3,
+      "text": "line3"
+     },
+     {
+      "kind": " ",
+      "old": 4,
+      "new": 4,
+      "text": "change 1"
+     },
+     {
+      "kind": " ",
+      "old": 5,
+      "new": 5,
+      "text": "change 2"
+     },
+     {
+      "kind": " ",
+      "old": 6,
+      "new": 6,
+      "text": "change 3"
+     },
+     {
+      "kind": "+",
+      "new": 7,
+      "text": "new tail"
+     }
+    ]
+   }
+  ],
+  "language": "text",
+  "mode": "head",
+  "context": 3,
+  "status": "M",
+  "oldMode": "100644",
+  "newMode": "100644",
+  "additions": 2,
+  "deletions": 1
+ }
+}

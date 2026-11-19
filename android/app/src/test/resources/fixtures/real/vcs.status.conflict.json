@@ -1,0 +1,53 @@
+{
+ "result": {
+  "branch": "main",
+  "head": "ca980923",
+  "ahead": 0,
+  "behind": 0,
+  "operation": "merge",
+  "files": [
+   {
+    "path": "both.txt",
+    "status": "U",
+    "staged": true,
+    "unstaged": true,
+    "conflicted": true,
+    "additions": 4,
+    "conflictType": "AA"
+   },
+   {
+    "path": "del.txt",
+    "status": "U",
+    "staged": true,
+    "unstaged": true,
+    "conflicted": true,
+    "additions": 1,
+    "conflictType": "DU"
+   },
+   {
+    "path": "f.txt",
+    "status": "U",
+    "staged": true,
+    "unstaged": true,
+    "conflicted": true,
+    "additions": 4,
+    "conflictType": "UU"
+   },
+   {
+    "path": "nested/",
+    "status": "?",
+    "unstaged": true,
+    "worktreeStatus": "?"
+   }
+  ],
+  "conflicts": 3,
+  "stashCount": 0,
+  "headHash": "ca98092359f631048ff184b8cef7e28690f3b6b1",
+  "operationDetail": {
+   "op": "merge",
+   "current": "33e4a4b9b29d0e977f3c60efa89aa7f110710e03",
+   "message": "Merge branch 'other'"
+  },
+  "untrackedCount": 1
+ }
+}

@@ -1,0 +1,173 @@
+{
+ "result": {
+  "commits": [
+   {
+    "hash": "66220370b80ca132bd44a5b604e1c71e47645dc7",
+    "short": "6622037",
+    "parents": [
+     "85da07bc78058b4d25da7f3cbe84a75444122032"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Add logo",
+    "refs": [
+     {
+      "name": "HEAD",
+      "kind": "head"
+     },
+     {
+      "name": "main",
+      "kind": "local"
+     }
+    ],
+    "graph": {
+     "lane": 0,
+     "lanes": 1,
+     "edges": [
+      {
+       "from": 0,
+       "to": 0,
+       "color": 0
+      }
+     ],
+     "color": 0
+    }
+   },
+   {
+    "hash": "85da07bc78058b4d25da7f3cbe84a75444122032",
+    "short": "85da07b",
+    "parents": [
+     "559f32d8d3e2020b8b01f2b09ffdbf0bb0b96584"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Local commit not pushed",
+    "graph": {
+     "lane": 0,
+     "lanes": 1,
+     "edges": [
+      {
+       "from": 0,
+       "to": 0,
+       "color": 0
+      }
+     ],
+     "color": 0
+    }
+   },
+   {
+    "hash": "559f32d8d3e2020b8b01f2b09ffdbf0bb0b96584",
+    "short": "559f32d",
+    "parents": [
+     "1055d2ad7454884fc8083832563d857d3adc6877",
+     "e63f2bca3bd6da01d380d7ddcf94ed2cbfaa3cd4"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Merge branch 'feature/login'",
+    "refs": [
+     {
+      "name": "v1.1",
+      "kind": "tag"
+     },
+     {
+      "name": "v1.0",
+      "kind": "tag"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote"
+     }
+    ],
+    "graph": {
+     "lane": 0,
+     "lanes": 1,
+     "edges": [
+      {
+       "from": 0,
+       "to": 0,
+       "color": 0
+      },
+      {
+       "from": 0,
+       "to": 1,
+       "color": 1
+      }
+     ],
+     "color": 0
+    }
+   },
+   {
+    "hash": "e63f2bca3bd6da01d380d7ddcf94ed2cbfaa3cd4",
+    "short": "e63f2bc",
+    "parents": [
+     "2a0de5a89aabaefdf97d2cc199bb46ed8d332c7f"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Improve login",
+    "refs": [
+     {
+      "name": "origin/feature/login",
+      "kind": "remote"
+     },
+     {
+      "name": "feature/login",
+      "kind": "local"
+     }
+    ],
+    "graph": {
+     "lane": 1,
+     "lanes": 2,
+     "edges": [
+      {
+       "from": 0,
+       "to": 0,
+       "color": 0
+      },
+      {
+       "from": 1,
+       "to": 1,
+       "color": 1
+      }
+     ],
+     "color": 1
+    }
+   },
+   {
+    "hash": "2a0de5a89aabaefdf97d2cc199bb46ed8d332c7f",
+    "short": "2a0de5a",
+    "parents": [
+     "c432b2d6908e52bae31684e918de42e9a42ae9ab"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Add login",
+    "graph": {
+     "lane": 1,
+     "lanes": 2,
+     "edges": [
+      {
+       "from": 0,
+       "to": 0,
+       "color": 0
+      },
+      {
+       "from": 1,
+       "to": 1,
+       "color": 1
+      }
+     ],
+     "color": 1
+    }
+   }
+  ],
+  "hasMore": true,
+  "graph": true
+ }
+}

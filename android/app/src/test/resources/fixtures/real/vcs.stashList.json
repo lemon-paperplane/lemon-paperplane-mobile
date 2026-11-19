@@ -1,0 +1,13 @@
+{
+ "result": {
+  "stashes": [
+   {
+    "index": 0,
+    "message": "wip test",
+    "branch": "main",
+    "date": "2026-11-18T12:14:13+08:00",
+    "hash": "7c2abd5516584a264ed3c026cff91ebd041bde10"
+   }
+  ]
+ }
+}

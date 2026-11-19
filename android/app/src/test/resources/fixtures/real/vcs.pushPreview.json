@@ -1,0 +1,42 @@
+{
+ "result": {
+  "remote": "origin",
+  "branch": "main",
+  "remoteRef": "refs/heads/main",
+  "commits": [
+   {
+    "hash": "66220370b80ca132bd44a5b604e1c71e47645dc7",
+    "short": "6622037",
+    "parents": [
+     "85da07bc78058b4d25da7f3cbe84a75444122032"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Add logo",
+    "refs": [
+     {
+      "name": "HEAD",
+      "kind": "head"
+     },
+     {
+      "name": "main",
+      "kind": "local"
+     }
+    ]
+   },
+   {
+    "hash": "85da07bc78058b4d25da7f3cbe84a75444122032",
+    "short": "85da07b",
+    "parents": [
+     "559f32d8d3e2020b8b01f2b09ffdbf0bb0b96584"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Local commit not pushed"
+   }
+  ],
+  "behind": 0
+ }
+}

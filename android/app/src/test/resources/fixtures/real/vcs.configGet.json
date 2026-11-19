@@ -1,0 +1,12 @@
+{
+ "result": {
+  "values": {
+   "user.email": "test@example.com",
+   "user.name": "Test User"
+  },
+  "scopes": {
+   "user.email": "local",
+   "user.name": "local"
+  }
+ }
+}

@@ -1,0 +1,1 @@
+{"result":{"submodules":[{"path":"vendor/lib","url":"https://example.com/lib.git","head":"bb22","status":"ok"},{"path":"vendor/new","status":"uninitialized"}]}}

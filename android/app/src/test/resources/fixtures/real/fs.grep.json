@@ -1,0 +1,1 @@
+{"result":{"matches":[{"path":"main.py","line":10,"column":13,"text":"    print(f\"tick {i}\", flush=True)"}],"truncated":false}}

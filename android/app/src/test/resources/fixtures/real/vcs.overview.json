@@ -1,0 +1,145 @@
+{
+ "result": [
+  {
+   "projectId": "879cfcb50dfb0b00",
+   "projectName": "demo",
+   "root": "/Users/me/Code/demo",
+   "relPath": ".",
+   "name": "demo",
+   "vcs": "git",
+   "status": {
+    "branch": "main",
+    "head": "503cbdb5",
+    "upstream": "origin/main",
+    "ahead": 3,
+    "behind": 0,
+    "files": [
+     {
+      "path": "big.txt",
+      "status": "M",
+      "unstaged": true,
+      "worktreeStatus": "M"
+     },
+     {
+      "path": "docs/guide.md",
+      "status": "D",
+      "unstaged": true,
+      "worktreeStatus": "D"
+     },
+     {
+      "path": "logo.png",
+      "status": "M",
+      "unstaged": true,
+      "worktreeStatus": "M"
+     },
+     {
+      "path": "src/b.txt",
+      "status": "M",
+      "unstaged": true,
+      "worktreeStatus": "M"
+     },
+     {
+      "path": "docs/中文 名.md",
+      "status": "?",
+      "unstaged": true,
+      "worktreeStatus": "?"
+     },
+     {
+      "path": "notes.txt",
+      "status": "?",
+      "unstaged": true,
+      "worktreeStatus": "?"
+     }
+    ],
+    "conflicts": 0,
+    "stashCount": 0,
+    "headHash": "503cbdb531882e0302bef3eee90fe15032854d84",
+    "untrackedCount": 2
+   }
+  },
+  {
+   "projectId": "cf98a77f79505fa9",
+   "projectName": "conflict",
+   "root": "/Users/me/Code/conflict",
+   "relPath": ".",
+   "name": "conflict",
+   "vcs": "git",
+   "status": {
+    "branch": "main",
+    "head": "ca980923",
+    "ahead": 0,
+    "behind": 0,
+    "operation": "merge",
+    "files": [
+     {
+      "path": "both.txt",
+      "status": "U",
+      "staged": true,
+      "unstaged": true,
+      "conflicted": true,
+      "conflictType": "AA"
+     },
+     {
+      "path": "del.txt",
+      "status": "U",
+      "staged": true,
+      "unstaged": true,
+      "conflicted": true,
+      "conflictType": "DU"
+     },
+     {
+      "path": "nested/",
+      "status": "?",
+      "unstaged": true,
+      "worktreeStatus": "?"
+     }
+    ],
+    "conflicts": 2,
+    "stashCount": 0,
+    "headHash": "ca98092359f631048ff184b8cef7e28690f3b6b1",
+    "operationDetail": {
+     "op": "merge",
+     "current": "33e4a4b9b29d0e977f3c60efa89aa7f110710e03",
+     "message": "Merge branch 'other'"
+    },
+    "untrackedCount": 1
+   }
+  },
+  {
+   "projectId": "cf98a77f79505fa9",
+   "projectName": "conflict",
+   "root": "/Users/me/Code/conflict/nested",
+   "relPath": "nested",
+   "name": "nested",
+   "vcs": "git",
+   "status": {
+    "branch": "main",
+    "head": "40f06dfe",
+    "ahead": 0,
+    "behind": 0,
+    "files": [],
+    "conflicts": 0,
+    "stashCount": 0,
+    "headHash": "40f06dfeb4555d6aac5a17fc06883e8c5817b718"
+   }
+  },
+  {
+   "projectId": "075da41ee3c7d77f",
+   "projectName": "rb",
+   "root": "/Users/me/Code/rb",
+   "relPath": ".",
+   "name": "rb",
+   "vcs": "git",
+   "status": {
+    "branch": "main",
+    "head": "96de3411",
+    "ahead": 0,
+    "behind": 0,
+    "files": [],
+    "conflicts": 0,
+    "stashCount": 0,
+    "headHash": "96de3411f66a8d8c262758ac14bbe4cd163206a0"
+   }
+  }
+ ]
+}

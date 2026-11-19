@@ -1,0 +1,94 @@
+{
+ "result": {
+  "ahead": [
+   {
+    "hash": "66220370b80ca132bd44a5b604e1c71e47645dc7",
+    "short": "6622037",
+    "parents": [
+     "85da07bc78058b4d25da7f3cbe84a75444122032"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Add logo",
+    "refs": [
+     {
+      "name": "HEAD",
+      "kind": "head"
+     },
+     {
+      "name": "main",
+      "kind": "local"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote"
+     }
+    ]
+   },
+   {
+    "hash": "85da07bc78058b4d25da7f3cbe84a75444122032",
+    "short": "85da07b",
+    "parents": [
+     "559f32d8d3e2020b8b01f2b09ffdbf0bb0b96584"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Local commit not pushed"
+   },
+   {
+    "hash": "559f32d8d3e2020b8b01f2b09ffdbf0bb0b96584",
+    "short": "559f32d",
+    "parents": [
+     "1055d2ad7454884fc8083832563d857d3adc6877",
+     "e63f2bca3bd6da01d380d7ddcf94ed2cbfaa3cd4"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Merge branch 'feature/login'",
+    "refs": [
+     {
+      "name": "v1.1",
+      "kind": "tag"
+     },
+     {
+      "name": "v1.0",
+      "kind": "tag"
+     }
+    ]
+   },
+   {
+    "hash": "1055d2ad7454884fc8083832563d857d3adc6877",
+    "short": "1055d2a",
+    "parents": [
+     "c432b2d6908e52bae31684e918de42e9a42ae9ab"
+    ],
+    "author": "Test User",
+    "email": "test@example.com",
+    "date": "2026-11-18T12:04:18+08:00",
+    "subject": "Add guide"
+   }
+  ],
+  "behind": [],
+  "files": [
+   {
+    "path": "README.md",
+    "status": "M",
+    "additions": 1
+   },
+   {
+    "path": "docs/guide.md",
+    "status": "A",
+    "additions": 1
+   },
+   {
+    "path": "logo.png",
+    "status": "A",
+    "binary": true
+   }
+  ],
+  "mergeBase": "e63f2bca3bd6da01d380d7ddcf94ed2cbfaa3cd4"
+ }
+}

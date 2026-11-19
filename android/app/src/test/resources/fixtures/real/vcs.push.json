@@ -1,0 +1,8 @@
+{
+ "result": {
+  "message": "已推送 2 个提交到 origin/main",
+  "ok": true,
+  "output": "Enumerating objects: 8, done.\nCounting objects: 100% (8/8), done.\nDelta compression using up to 12 threads\nCompressing objects: 100% (5/5), done.\nWriting objects: 100% (6/6), 694 bytes | 694.00 KiB/s, done.\nTotal 6 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)\nTo /Users/me/Code/remote.git\n \trefs/heads/main:refs/heads/main\t559f32d..6622037\nDone",
+  "taskId": "12e9f5ce36bb109a"
+ }
+}

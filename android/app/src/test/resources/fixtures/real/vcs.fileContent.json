@@ -1,0 +1,10 @@
+{
+ "result": {
+  "path": "logo.png",
+  "ref": "HEAD",
+  "exists": true,
+  "size": 80,
+  "binary": true,
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAF0lEQVR4nGP4z8BAEiJN9aiGUQ1DSgMAkPn/Afnh+ngAAAAASUVORK5CYII="
+ }
+}

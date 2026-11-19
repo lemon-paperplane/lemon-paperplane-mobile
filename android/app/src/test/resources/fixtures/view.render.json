@@ -1,0 +1,11 @@
+{"result":{"root":{"type":"column","children":[
+ {"type":"heading","text":"端点"},
+ {"type":"toolbar","children":[{"type":"button","text":"刷新","icon":"builtin:refresh-cw","action":"refresh"}]},
+ {"type":"table","id":"t","selectable":true,"columns":[{"key":"method","title":"方法","width":60},{"key":"path","title":"路径","mono":true}],
+  "rows":[{"id":"1","cells":{"method":"GET","path":"/api/users"},"action":"open","actions":[{"type":"button","text":"打开","action":"open","style":"link"}]}]},
+ {"type":"kv","items":[{"key":"端口","value":"8080","mono":true}]},
+ {"type":"progress","value":-1},
+ {"type":"form","action":"save","submitText":"保存","fields":[{"key":"name","title":"名称","type":"string"}],"values":{"name":"x"}},
+ {"type":"tree","rows":[{"id":"a","cells":{"title":"A"},"expanded":true,"children":[{"id":"b","cells":{"title":"B"}}]}]},
+ {"type":"console","console":"r1"}
+]},"state":{"page":1},"refreshMs":5000}}

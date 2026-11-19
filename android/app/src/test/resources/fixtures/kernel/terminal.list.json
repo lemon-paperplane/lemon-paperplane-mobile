@@ -1,0 +1,1 @@
+{"result":[{"id":"t1","workspaceId":"ws1","projectId":"p1","name":"demo","cwd":"/Users/me/Code/demo","shell":"/bin/zsh","pid":4242,"cols":120,"rows":32,"startedAt":"2026-11-20T09:00:00.123456+08:00","output":5300000},{"id":"t2","name":"tmp","cwd":"/tmp","shell":"/bin/bash","cols":80,"rows":24,"startedAt":"2026-11-20T09:05:00Z","exited":true,"exitCode":130,"output":12}]}

@@ -1,0 +1,42 @@
+{
+ "result": {
+  "commit": {
+   "hash": "559f32d8d3e2020b8b01f2b09ffdbf0bb0b96584",
+   "short": "559f32d",
+   "parents": [
+    "1055d2ad7454884fc8083832563d857d3adc6877",
+    "e63f2bca3bd6da01d380d7ddcf94ed2cbfaa3cd4"
+   ],
+   "author": "Test User",
+   "email": "test@example.com",
+   "date": "2026-11-18T12:04:18+08:00",
+   "subject": "Merge branch 'feature/login'",
+   "refs": [
+    {
+     "name": "v1.1",
+     "kind": "tag"
+    },
+    {
+     "name": "v1.0",
+     "kind": "tag"
+    },
+    {
+     "name": "origin/main",
+     "kind": "remote"
+    }
+   ]
+  },
+  "files": [
+   {
+    "path": "src/login.txt",
+    "status": "A",
+    "additions": 2
+   }
+  ],
+  "message": "Merge branch 'feature/login'",
+  "committer": "Test User",
+  "committerEmail": "test@example.com",
+  "committerDate": "2026-11-18T12:04:18+08:00",
+  "parent": 1
+ }
+}

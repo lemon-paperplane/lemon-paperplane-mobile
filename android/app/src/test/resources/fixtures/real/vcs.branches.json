@@ -1,0 +1,51 @@
+{
+ "result": {
+  "current": "main",
+  "local": [
+   {
+    "name": "feature/login",
+    "head": "e63f2bc",
+    "subject": "Improve login",
+    "date": "2026-11-18T12:04:18+08:00",
+    "hash": "e63f2bca3bd6da01d380d7ddcf94ed2cbfaa3cd4",
+    "author": "Test User"
+   },
+   {
+    "name": "main",
+    "upstream": "origin/main",
+    "ahead": 2,
+    "head": "6622037",
+    "subject": "Add logo",
+    "date": "2026-11-18T12:04:18+08:00",
+    "current": true,
+    "hash": "66220370b80ca132bd44a5b604e1c71e47645dc7",
+    "author": "Test User"
+   }
+  ],
+  "remote": [
+   {
+    "name": "origin/feature/login",
+    "head": "e63f2bc",
+    "subject": "Improve login",
+    "date": "2026-11-18T12:04:18+08:00",
+    "hash": "e63f2bca3bd6da01d380d7ddcf94ed2cbfaa3cd4",
+    "remote": "origin",
+    "author": "Test User"
+   },
+   {
+    "name": "origin/main",
+    "head": "559f32d",
+    "subject": "Merge branch 'feature/login'",
+    "date": "2026-11-18T12:04:18+08:00",
+    "hash": "559f32d8d3e2020b8b01f2b09ffdbf0bb0b96584",
+    "remote": "origin",
+    "author": "Test User"
+   }
+  ],
+  "head": "66220370b80ca132bd44a5b604e1c71e47645dc7",
+  "recent": [
+   "main",
+   "feature/login"
+  ]
+ }
+}

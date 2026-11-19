@@ -1,0 +1,2 @@
+{"result":[{"id":"gradle","name":"Gradle","version":"0.1.0","vendor":"Lemon","description":"Gradle 构建","icon":"plugin:gradle/icons/gradle.svg","category":"buildSystem","source":"bundled","dir":"/Applications/x/plugins/gradle","enabled":true,"running":true,"dependencies":[{"id":"java"}],"contributes":{"facets":["gradle"],"runConfigTypes":["gradle-task"],"diagnostics":12,"actions":["clean"]}},
+{"id":"acme.thing","name":"Thing","version":"1.0.0","source":"user","dir":"/x","enabled":false,"running":false,"error":"engine mismatch","contributes":{"diagnostics":0}}]}

@@ -1,0 +1,9 @@
+{
+ "result": {
+  "message": "已是最新",
+  "ok": true,
+  "output": "Already up to date.",
+  "reason": "upToDate",
+  "taskId": "2d5c3a9f3506d673"
+ }
+}

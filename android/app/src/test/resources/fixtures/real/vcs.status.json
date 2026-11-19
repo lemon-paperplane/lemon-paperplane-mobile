@@ -1,0 +1,56 @@
+{
+ "result": {
+  "branch": "main",
+  "head": "66220370",
+  "upstream": "origin/main",
+  "ahead": 2,
+  "behind": 0,
+  "files": [
+   {
+    "path": "docs/guide.md",
+    "status": "D",
+    "staged": true,
+    "deletions": 1,
+    "indexStatus": "D"
+   },
+   {
+    "path": "logo.png",
+    "status": "M",
+    "unstaged": true,
+    "binary": true,
+    "worktreeStatus": "M"
+   },
+   {
+    "path": "src/a.txt",
+    "status": "M",
+    "unstaged": true,
+    "additions": 2,
+    "deletions": 1,
+    "worktreeStatus": "M"
+   },
+   {
+    "path": "src/staged.txt",
+    "status": "A",
+    "staged": true,
+    "additions": 1,
+    "indexStatus": "A"
+   },
+   {
+    "path": "docs/中文 名.md",
+    "status": "?",
+    "unstaged": true,
+    "worktreeStatus": "?"
+   },
+   {
+    "path": "notes.txt",
+    "status": "?",
+    "unstaged": true,
+    "worktreeStatus": "?"
+   }
+  ],
+  "conflicts": 0,
+  "stashCount": 0,
+  "headHash": "66220370b80ca132bd44a5b604e1c71e47645dc7",
+  "untrackedCount": 2
+ }
+}

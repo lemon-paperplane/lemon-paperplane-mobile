@@ -1,0 +1,1 @@
+{"result":{"lines":[{"seq":13,"t":1794969048189,"s":"stdout","text":"tick 2"},{"seq":14,"t":1794969049194,"s":"stdout","text":"tick 3"},{"seq":15,"t":1794969050198,"s":"stdout","text":"tick 4"},{"seq":16,"t":1794969051203,"s":"stdout","text":"tick 5"},{"seq":17,"t":1794969052203,"s":"stdout","text":"tick 6"}],"lastSeq":17,"total":17,"truncated":true}}
