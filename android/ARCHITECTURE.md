@@ -29,12 +29,12 @@ Android 客户端只连远程服务器（Mac / Windows 桌面版开了「允许�
 
 | 包 | 内容 | 对照 Mac | 负责 |
 |---|---|---|---|
-| `kit/` | 模型（kotlinx.serialization）、格式化、ANSI 解析、服务器路径、提交图几何 | `PaperplaneKit/Sources/PaperplaneKit/{Models,Util,ANSI,Graph}` | 基础层 A |
-| `net/` | RemoteClient（全部操作的强类型调用）、事件流、日志流、终端流、RemoteAuth、ConnectionCode、LocalGateway、PortForwarder、证书固定 | `PaperplaneKit/.../API`、内核 `internal/gateway` | 基础层 A |
-| `core/` | AppModel（当前服务器、连接状态、重连）、各 Store（StateFlow）、ServerStore（列表存 SharedPreferences，密钥用 Android Keystore AES-GCM 加密）、Actions | `LemonPaperplane/Core/*` | 基础层 A |
-| `ui/theme/`、`ui/icons/`、`ui/i18n/` | 设计变量（读 assets/shared/design-tokens.json，深浅色）、SVG 图标（AndroidSVG，按颜色着色缓存；插件图标经 RemoteClient 取）、文案 `tr(key, args)`（读 assets/shared/i18n，`i18n/android` 覆盖） | `Design/*`、`Core/L10n.swift` | 基础层 B |
-| `ui/components/` | 按钮、徽标、状态点、卡片、分组、列表行、输入框、下拉、底部弹出面板、对话框、提示条（Toast）、空状态、加载、i 说明气泡、ANSI 文本、代码字体 | `Components/*` | 基础层 B |
-| `ui/shell/` | MainActivity 的框架：顶栏（服务器切换器、工作区选择、搜索、导入）、底部标签栏、平板侧栏、导航路由（各功能页的入口函数由各负责人提供） | `Features/Main/*` | 基础层 B |
+| `kit/` | 模型（kotlinx.serialization）、全部操作的强类型调用（`OpCaller` 的扩展函数）、格式化、ANSI 解析、服务器路径、提交图几何 | `PaperplaneKit/Sources/PaperplaneKit/{Models,API/*Operations,Util,ANSI,Graph}` | 基础层「模型」 |
+| `net/` | RemoteClient（实现 `OpCaller`）、证书固定、SSE 连接（事件流、日志流、终端流，断线续传）、RemoteAuth、ConnectionCode、LocalGateway、PortForwarder；另加 `core/ServerStore.kt` | `PaperplaneKit/.../API/{APIClient,SSE,Streams}`、内核 `internal/gateway` | 基础层「网络」 |
+| `core/` | AppModel（当前服务器、连接状态、切到前台重连）、各 Store（StateFlow）、Actions；ServerStore（列表存 SharedPreferences，密钥用 Android Keystore AES-GCM 加密）由「网络」写 | `LemonPaperplane/Core/*` | 我（集成） |
+| `ui/theme/`、`ui/icons/`、`ui/i18n/` | 设计变量（读 assets/shared/design-tokens.json，深浅色）、SVG 图标（AndroidSVG，按颜色着色缓存；插件图标的字节由调用方提供）、文案 `tr(key, args)`（读 assets/shared/i18n，`i18n/android` 覆盖） | `Design/*`、`Core/L10n.swift` | 基础层「界面」 |
+| `ui/components/`、`ui/gallery/` | 按钮、徽标、状态点、卡片、分组、列表行、输入框、下拉、底部弹出面板、对话框、提示条（Toast）、空状态、加载、i 说明气泡、ANSI 文本、代码字体；调试版里的组件陈列页 | `Components/*` | 基础层「界面」 |
+| `ui/shell/` | MainActivity 的框架：顶栏（服务器切换器、工作区选择、搜索、导入）、底部标签栏、平板侧栏、导航路由（各功能页的入口函数由各负责人提供） | `Features/Main/*` | 我（集成） |
 | `features/servers/` | 切换器面板、添加服务器（扫码 / 连接码 / 账号密码 + 证书确认）、管理服务器、「连不上」页 | `Features/Servers/{ServerSwitcher,AddServerDialog}`、`MainView` | 我（集成） |
 | `features/workspace/`、`features/runs/`、`features/launch/`、`features/importflow/` | 工程卡片列表、运行中、启动面板、运行控制台（颜色、搜索、跟随、往上翻读完整日志）、诊断与一键修复、运行地址（转发 / 服务器地址）、导入与扫描（选服务器上的文件夹） | `Features/{Workspace,Launch,Import,Resources}`、`Components/Console.swift`、`Servers/{RunURLLinks,ServerFolderPicker}` | 功能 1 |
 | `features/project/`、`features/forms/`、`features/plugins/`、`features/toolchains/`、`features/settings/` | 工程详情（概览 / 运行 / 配置 / 依赖 / 插件视图）、运行配置编辑（表单渲染）、插件声明式界面渲染、插件网页、工具链、插件与商店、设置（服务器设置 +「允许其他设备连接」管理，生成密钥时显示二维码） | `Features/{Project,Plugins,Toolchains,Settings}`、`Renderers/*`、`Servers/ServerSettings` | 功能 2 |

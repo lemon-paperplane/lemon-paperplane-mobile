@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -11,8 +12,12 @@ plugins {
 //   lemon-paperplane/
 //     lemon-paperplane-main/      shared/、lemon-paperplane-main-editor/dist/
 //     lemon-paperplane-mobile/    本仓库
-// 放在别处时用 -Ppaperplane.mainRepo=<路径> 或环境变量 PAPERPLANE_MAIN_REPO 指定
-val mainRepo = ((findProperty("paperplane.mainRepo") as String?) ?: System.getenv("PAPERPLANE_MAIN_REPO"))
+// 放在别处时用 local.properties 里的 paperplane.mainRepo=<路径>、-Ppaperplane.mainRepo 或环境变量 PAPERPLANE_MAIN_REPO 指定
+val localProps = Properties().also { p ->
+    rootProject.file("local.properties").takeIf { it.isFile }?.reader()?.use { r -> p.load(r) }
+}
+val mainRepo = ((findProperty("paperplane.mainRepo") as String?) ?: localProps.getProperty("paperplane.mainRepo")
+    ?: System.getenv("PAPERPLANE_MAIN_REPO"))
     ?.let { file(it) }
     ?: rootProject.projectDir.resolve("../../lemon-paperplane-main").normalize()
 val generatedAssets = layout.buildDirectory.dir("generated/paperplane-assets")
