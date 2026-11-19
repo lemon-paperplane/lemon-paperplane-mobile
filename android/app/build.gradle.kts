@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -81,6 +82,18 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // 截图测试（Robolectric + Roborazzi）要读 assets 里的图标、文案和设计变量
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all { test ->
+            // 截图测试每次都重新生成 PNG（写到 app/build/outputs/roborazzi/）；-Proborazzi.record=false 时跳过
+            test.systemProperty("roborazzi.test.record", findProperty("roborazzi.record")?.toString() ?: "true")
+            // Robolectric 运行时要下载 android-all；本机走代理时把 HTTPS_PROXY 交给测试进程
+            System.getenv("HTTPS_PROXY")?.let { URI(it) }?.takeIf { it.host != null && it.port > 0 }?.let { u ->
+                test.systemProperty("https.proxyHost", u.host)
+                test.systemProperty("https.proxyPort", u.port.toString())
+            }
+            test.maxHeapSize = "3g"
+        }
     }
 }
 
@@ -122,4 +135,13 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+
+    // 界面截图测试：JVM 上用 Robolectric 渲染 Compose，Roborazzi 存 PNG（ui/ 的组件陈列页与关键组件）
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.43.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.43.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-junit-rule:1.43.0")
 }
