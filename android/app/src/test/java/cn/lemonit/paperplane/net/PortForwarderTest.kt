@@ -80,11 +80,29 @@ class PortForwarderTest {
     private lateinit var fwd: PortForwarder
     private val l = RecordingListener()
 
+    /** 转发与客户端的日志：失败时附在异常里（云端 Linux 上排查用） */
+    private val logs = ConcurrentLinkedQueue<String>()
+    private val logger = NetLogger { logs += "${System.nanoTime() / 1_000_000} [${Thread.currentThread().name}] $it" }
+
+    @get:org.junit.Rule
+    val attachLogs = org.junit.rules.TestRule { base, _ ->
+        object : org.junit.runners.model.Statement() {
+            override fun evaluate() {
+                try {
+                    base.evaluate()
+                } catch (t: Throwable) {
+                    throw AssertionError("${t}\n--- 日志 ---\n" + logs.joinToString("\n"), t)
+                }
+            }
+        }
+    }
+
     @Before
     fun setUp() {
         server = FakeTunnelServer()
-        c = RemoteClient(ServerTarget.of(listOf(server.base), TestCerts.fp(TestCerts.selfSigned)), TOKEN, listener = l)
-        fwd = PortForwarder(c)
+        c = RemoteClient(ServerTarget.of(listOf(server.base), TestCerts.fp(TestCerts.selfSigned)), TOKEN,
+            options = RemoteClient.Options(logger = logger), listener = l)
+        fwd = PortForwarder(c, logger)
     }
 
     @After
@@ -141,7 +159,7 @@ class PortForwarderTest {
     @Test
     fun rejectedKeyClosesConnectionAndReports() {
         val bad = PortForwarder(RemoteClient(ServerTarget.of(listOf(server.base), TestCerts.fp(TestCerts.selfSigned)),
-            "ppk_00000000_" + "x".repeat(43), listener = l))
+            "ppk_00000000_" + "x".repeat(43), options = RemoteClient.Options(logger = logger), listener = l), logger)
         bad.use {
             val f = it.forward(freePort())
             Socket(TestCerts.loopback, f.localPort).use { s ->
