@@ -49,18 +49,34 @@ android {
         applicationId = "cn.lemonit.paperplane"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // 云端构建传入：版本号取标签（v0.2.0 → 0.2.0），versionCode 取构建序号（每次递增，手机才能覆盖升级）
+        versionCode = System.getenv("PAPERPLANE_VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = System.getenv("PAPERPLANE_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // 发布签名：密钥由 android/scripts/make-signing-key.sh 生成，存在仓库 Secrets（云端构建时解出来，经环境变量传入）。
+    // 没有这些环境变量时（本机开发）用调试签名。
+    val releaseKeystore = System.getenv("PAPERPLANE_KEYSTORE")?.let { file(it) }?.takeIf { it.isFile }
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = System.getenv("PAPERPLANE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("PAPERPLANE_KEY_ALIAS")
+                keyPassword = System.getenv("PAPERPLANE_KEY_PASSWORD") ?: System.getenv("PAPERPLANE_KEYSTORE_PASSWORD")
+                storeType = "PKCS12"
+            }
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // R8 压缩先不开：kotlinx.serialization 与插件网页桥接的保留规则还没在真机上验证过
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // 正式签名配置好之前先用调试签名
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 

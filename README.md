@@ -10,6 +10,12 @@
 | iOS / iPadOS | — | 计划中 |
 | HarmonyOS | — | 计划中 |
 
+## 下载
+
+[![构建安卓版](https://github.com/lemon-paperplane/lemon-paperplane-mobile/actions/workflows/android.yml/badge.svg)](https://github.com/lemon-paperplane/lemon-paperplane-mobile/actions/workflows/android.yml)
+
+每次提交到 main 都会自动构建签名 APK，放在 [Releases → 最新构建](https://github.com/lemon-paperplane/lemon-paperplane-mobile/releases/tag/latest-build)；推送 `v0.2.0` 这样的标签时另发正式版本。所有版本用同一把密钥签名，可以直接覆盖升级。
+
 ## 添加服务器
 
 在服务器上生成访问密钥（桌面版：设置 → 服务器 → 允许其他设备连接 → 新建访问密钥；无头版：`paperplane server key add <设备名>`），会给出连接码和二维码。手机上「添加服务器」扫码或粘贴连接码即可；服务器开了账号密码登录时也可以用账号密码，第一次连接核对证书指纹。

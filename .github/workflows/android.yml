@@ -1,0 +1,135 @@
+# 安卓版自动构建与发布：提交到 main 后构建签名 APK，覆盖更新「最新构建」发行版；推送 v 开头的标签（如 v0.2.0）时另发正式版本。
+# 共用的图标、文案、设计变量和编辑器网页来自主仓库 lemon-paperplane-main（构建时检出它的 main 分支）。
+# 签名密钥在仓库 Secrets（android/scripts/make-signing-key.sh 生成）：ANDROID_KEYSTORE_BASE64、ANDROID_KEYSTORE_PASSWORD、ANDROID_KEY_ALIAS。
+name: 构建安卓版
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths-ignore: ["**.md", "LICENSE"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.apk.outputs.version }}
+      main_sha: ${{ steps.apk.outputs.main_sha }}
+    concurrency:
+      group: android-${{ github.ref }}
+      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: lemon-paperplane-mobile
+      - name: 检出主仓库（共用资源与编辑器网页）
+        uses: actions/checkout@v4
+        with:
+          repository: lemon-paperplane/lemon-paperplane-main
+          path: lemon-paperplane-main
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: gradle/actions/setup-gradle@v4
+      - name: 构建编辑器网页
+        working-directory: lemon-paperplane-main/lemon-paperplane-main-editor
+        run: npm ci --no-audit --no-fund && npm run build
+      - name: 版本号与签名密钥
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then echo "PAPERPLANE_VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"; fi
+          # versionCode 每次构建递增：手机上才能覆盖升级
+          echo "PAPERPLANE_VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.p12"
+            {
+              echo "PAPERPLANE_KEYSTORE=$RUNNER_TEMP/release.p12"
+              echo "PAPERPLANE_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+              echo "PAPERPLANE_KEY_ALIAS=$KEY_ALIAS"
+            } >> "$GITHUB_ENV"
+          else
+            echo "::warning::没有配置签名密钥（ANDROID_KEYSTORE_BASE64），APK 用临时调试签名，不能覆盖升级"
+          fi
+      - name: 单元测试
+        working-directory: lemon-paperplane-mobile/android
+        run: ./gradlew testDebugUnitTest -Proborazzi.record=false --stacktrace
+      - name: 构建 APK
+        id: apk
+        working-directory: lemon-paperplane-mobile/android
+        run: |
+          ./gradlew assembleRelease --stacktrace
+          ver=$(grep -o '"versionName": *"[^"]*"' app/build/outputs/apk/release/output-metadata.json | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/out/LemonPaperplane-$ver-android.apk"
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+          echo "main_sha=$(git -C "$GITHUB_WORKSPACE/lemon-paperplane-main" rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: out/*.apk
+          if-no-files-found: error
+
+  release:
+    name: 发布
+    needs: android
+    runs-on: ubuntu-latest
+    # 发布过程中不要被新的提交打断（否则可能只删了旧的、没建新的）
+    concurrency:
+      group: android-release-${{ github.ref }}
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      APK_VERSION: ${{ needs.android.outputs.version }}
+      MAIN_SHA: ${{ needs.android.outputs.main_sha }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android
+          path: out
+      - name: 校验值与说明
+        run: |
+          cd out && sha256sum * > SHA256SUMS && cd ..
+          main_sha="$MAIN_SHA"
+          {
+            if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+              echo "柠檬纸飞机安卓版 $APK_VERSION"
+            else
+              echo "main 分支最新提交的自动构建：[\`${GITHUB_SHA::7}\`](https://github.com/$GH_REPO/commit/$GITHUB_SHA) $(date -u '+%Y-%m-%d %H:%M') UTC（共用资源取自主仓库 \`$main_sha\`）"
+              echo
+              echo "> $(gh api "repos/$GH_REPO/commits/$GITHUB_SHA" --jq '.commit.message' | head -1)"
+            fi
+            echo
+            echo "下载 \`LemonPaperplane-$APK_VERSION-android.apk\`，在手机上打开安装（Android 8.0 及以上，手机和平板通用）。第一次安装要允许浏览器或文件管理器「安装未知应用」。"
+            echo
+            echo "从旧的调试版升级时签名不同，要先卸载旧版。之后的版本都用同一把密钥签名，可以直接覆盖升级。文件的 SHA-256 在 \`SHA256SUMS\` 里。"
+          } > notes.md
+          cat notes.md
+      - name: 正式版本（标签）
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" out/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" out/* --title "柠檬纸飞机安卓版 $APK_VERSION" --notes-file notes.md --verify-tag --latest
+          fi
+      - name: 最新构建（main）
+        if: github.ref == 'refs/heads/main'
+        run: |
+          tag=latest-build
+          if gh release list --limit 100 --json tagName --jq '.[].tagName' | grep -q '^v'; then flag=--prerelease; else flag=--latest; fi
+          gh release delete "$tag" --cleanup-tag --yes >/dev/null 2>&1 || true
+          gh release create "$tag" out/* --target "$GITHUB_SHA" --title "最新构建（main）" --notes-file notes.md $flag
