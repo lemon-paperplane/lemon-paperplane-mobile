@@ -78,16 +78,19 @@ class PortForwarder(
     /** 停止一个转发（关监听端口和它上面的连接） */
     @Synchronized
     fun unforward(remotePort: Int) {
-        entries.remove(remotePort)?.let { shut(it) }
+        entries.remove(remotePort)?.let { e -> offCallerThread("paperplane-unforward") { shut(e) } }
     }
 
     override fun close() {
-        synchronized(this) {
+        val all = synchronized(this) {
             closed = true
-            entries.values.forEach { shut(it) }
-            entries.clear()
+            entries.values.toList().also { entries.clear() }
         }
-        pool.shutdownNow()
+        // 到服务器的是 TLS 连接，关闭要发 close_notify：放到后台线程（安卓主线程上不允许网络操作）
+        offCallerThread("paperplane-forward-close") {
+            all.forEach { shut(it) }
+            pool.shutdownNow()
+        }
     }
 
     private fun shut(e: Entry) {

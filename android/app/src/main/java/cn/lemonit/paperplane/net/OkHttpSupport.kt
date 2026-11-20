@@ -91,3 +91,8 @@ internal fun encodeSegment(s: String): String {
     }
     return sb.toString()
 }
+
+/** 在后台守护线程里执行（关连接等可能碰网络的收尾，调用方可能在安卓主线程上） */
+internal fun offCallerThread(name: String, block: () -> Unit) {
+    Thread({ runCatching(block) }, name).apply { isDaemon = true }.start()
+}

@@ -425,7 +425,8 @@ class RemoteClient(
     /** 关掉连接池、取消进行中的请求（流和本地网关由各自的所有者关闭） */
     override fun close() {
         http.dispatcher.cancelAll()
-        http.connectionPool.evictAll()
+        // 关 TLS 连接要发 close_notify（算网络操作），安卓主线程上不允许：放到后台线程
+        offCallerThread("paperplane-client-close") { http.connectionPool.evictAll() }
     }
 
     companion object {

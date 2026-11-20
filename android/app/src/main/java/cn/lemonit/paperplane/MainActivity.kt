@@ -24,22 +24,21 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * 调试版：用启动参数预填「添加服务器」表单（真机联调时 adb 打字会被中文输入法吞掉）。
-     * adb shell am start -n cn.lemonit.paperplane/.MainActivity --es pp.add.address 192.168.1.10:47290 --es pp.add.user tester
+     * 调试版：预填「添加服务器」表单（真机联调时 adb 打字会被中文输入法吞掉）。用 data 链接传参（有的系统会丢掉 am start 的 extras）：
+     * adb shell am start -n cn.lemonit.paperplane/.MainActivity -d "ppdebug://add?address=192.168.1.10:47290&user=tester"
      */
     private fun handleDebugExtras(intent: Intent?) {
-        if (!BuildConfig.DEBUG || intent == null) return
-        val address = intent.getStringExtra("pp.add.address")
-        val code = intent.getStringExtra("pp.add.code")
-        if (address == null && code == null) return
-        intent.removeExtra("pp.add.address")
-        intent.removeExtra("pp.add.code")
+        if (!BuildConfig.DEBUG) return
+        val uri = intent?.data ?: return
+        if (uri.scheme != "ppdebug" || uri.host != "add") return
+        intent.data = null
+        val code = uri.getQueryParameter("code")
         AppModel.nav.push(
             AddServerRoute(
                 mode = if (code != null) AddMode.CODE else AddMode.PASSWORD,
                 code = code,
-                address = address,
-                user = intent.getStringExtra("pp.add.user"),
+                address = uri.getQueryParameter("address"),
+                user = uri.getQueryParameter("user"),
             ),
         )
     }
