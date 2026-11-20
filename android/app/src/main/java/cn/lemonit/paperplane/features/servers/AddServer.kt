@@ -71,7 +71,14 @@ enum class AddMode { SCAN, CODE, PASSWORD }
  * 扫码 / 连接码：解码 → 依次试连接码里的地址（固定指纹）→ 保存并切到这台；
  * 账号密码：探测拿证书（不是 CA 证书时让用户核对指纹）→ 登录换访问密钥 → 连接 → 保存。
  */
-data class AddServerRoute(val reloginId: String? = null, val mode: AddMode? = null, val code: String? = null) : Route {
+data class AddServerRoute(
+    val reloginId: String? = null,
+    val mode: AddMode? = null,
+    val code: String? = null,
+    /** 预填的地址、账号（调试版启动参数、以后的链接用） */
+    val address: String? = null,
+    val user: String? = null,
+) : Route {
     override val key get() = "addServer"
 
     @Composable
@@ -90,8 +97,8 @@ fun AddServerPage(route: AddServerRoute, onDone: () -> Unit = { AppModel.nav.pop
     var name by rememberSaveable { mutableStateOf(relogin?.name.orEmpty()) }
     var nameEdited by rememberSaveable { mutableStateOf(relogin != null) }
     var code by rememberSaveable { mutableStateOf(route.code.orEmpty()) }
-    var address by rememberSaveable { mutableStateOf(if (relogin?.addedVia == AddMethod.PASSWORD) relogin.url else "") }
-    var user by rememberSaveable { mutableStateOf(relogin?.user.orEmpty()) }
+    var address by rememberSaveable { mutableStateOf(route.address ?: if (relogin?.addedVia == AddMethod.PASSWORD) relogin.url else "") }
+    var user by rememberSaveable { mutableStateOf(route.user ?: relogin?.user.orEmpty()) }
     var password by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -345,7 +352,7 @@ fun AddServerPage(route: AddServerRoute, onDone: () -> Unit = { AppModel.nav.pop
                         if (decoded != null) {
                             Column(verticalArrangement = Arrangement.spacedBy(PaperTheme.spacing.xs)) {
                                 LabelWithInfo(tr("server.add.address"), tr("server.add.address.info"))
-                                PaperTextField(address, { address = it }, placeholder = tr("server.add.address.placeholder"), mono = true, keyboardType = KeyboardType.Uri)
+                                PaperTextField(address, { address = halfWidth(it) }, placeholder = tr("server.add.address.placeholder"), mono = true, keyboardType = KeyboardType.Uri)
                             }
                         }
                     }
@@ -361,7 +368,7 @@ fun AddServerPage(route: AddServerRoute, onDone: () -> Unit = { AppModel.nav.pop
                             LabelWithInfo(tr("server.add.address"), tr("server.add.address.info"))
                             PaperTextField(
                                 address,
-                                { address = it },
+                                { address = halfWidth(it) },
                                 placeholder = tr("server.add.address.placeholder"),
                                 mono = true,
                                 keyboardType = KeyboardType.Uri,
@@ -422,6 +429,20 @@ private fun CertView(p: ProbeResult, changed: Boolean, error: String?) {
         }
     }
     error?.let { PaperAlert(Tone.Danger, it) }
+}
+
+/** 中文输入法下打出的全角标点（。：／）换成地址里用的半角 */
+private fun halfWidth(s: String): String = buildString(s.length) {
+    for (ch in s) append(
+        when (ch) {
+            '。', '．' -> '.'
+            '：' -> ':'
+            '／' -> '/'
+            '［' -> '['
+            '］' -> ']'
+            else -> if (ch in '０'..'９') '0' + (ch - '０') else ch
+        },
+    )
 }
 
 /** 32 组指纹分四行，方便逐组核对（手机屏窄） */

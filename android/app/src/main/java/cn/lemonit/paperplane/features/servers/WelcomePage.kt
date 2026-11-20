@@ -38,6 +38,16 @@ import cn.lemonit.paperplane.ui.theme.PaperTheme
 @Composable
 fun WelcomePage() {
     var adding by rememberSaveable { mutableStateOf<AddMode?>(null) }
+    // 别处压进来的添加页（调试版启动参数等）
+    val pushed = cn.lemonit.paperplane.core.AppModel.nav.top as? AddServerRoute
+    if (pushed != null) {
+        val nav = cn.lemonit.paperplane.core.AppModel.nav
+        BackHandler { nav.pop() }
+        CompositionLocalProvider(LocalPageBack provides { nav.pop() }, LocalEdgeToEdge provides true) {
+            AddServerPage(pushed, onDone = { nav.popToRoot() })
+        }
+        return
+    }
     val mode = adding
     if (mode != null) {
         BackHandler { adding = null }
