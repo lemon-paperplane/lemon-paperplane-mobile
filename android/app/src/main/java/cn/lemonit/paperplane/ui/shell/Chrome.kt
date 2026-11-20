@@ -84,9 +84,10 @@ internal fun PhoneTopBar() {
     }
     Column(Modifier.fillMaxWidth().background(PaperTheme.colors.bgChrome).windowInsetsPadding(WindowInsets.statusBars)) {
         Row(Modifier.fillMaxWidth().height(56.dp).padding(start = s.md, end = s.xs), verticalAlignment = Alignment.CenterVertically) {
-            ServerSwitcherButton(Modifier.weight(1f, fill = false))
-            ReconnectingIndicator()
-            Spacer(Modifier.weight(1f))
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                ServerSwitcherButton(Modifier.weight(1f, fill = false))
+                ReconnectingIndicator()
+            }
             if (searchable) {
                 PaperIconButton("search", tr("common.search"), active = searching, onClick = {
                     searching = !searching

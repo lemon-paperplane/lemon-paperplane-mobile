@@ -110,16 +110,18 @@ fun AddServerPage(route: AddServerRoute, onDone: () -> Unit = { AppModel.nav.pop
         }
     }
 
-    val duplicate: ServerEntry? = if (relogin != null) null else when (mode) {
-        AddMode.SCAN, AddMode.CODE -> decoded?.let { d -> AppModel.existingServer(listOf(address) + d.urls, d.fingerprint) }
+    /** 已添加过的同一台服务器（重新登录时不算）。按当前输入现算：扫码后在协程里调用时不能用旧的组合值 */
+    fun findDuplicate(code: ConnectionCode?): ServerEntry? = if (relogin != null) null else when (mode) {
+        AddMode.SCAN, AddMode.CODE -> code?.let { d -> AppModel.existingServer(listOf(address) + d.urls, d.fingerprint) }
         AddMode.PASSWORD -> ServerAddress.normalize(address)?.let { n ->
             AppModel.serverList.firstOrNull { s -> s.urls.any { ServerAddress.same(it, n) } }
         }
     }
+    val duplicate = findDuplicate(decoded)
 
     /** 保存并切到这台 */
-    fun finish(urls: List<String>, url: String, fingerprint: String, trusted: Boolean, token: String, keyId: String, info: SystemInfo?, via: AddMethod, fallbackName: String) {
-        val existing = relogin ?: duplicate
+    fun finish(urls: List<String>, url: String, fingerprint: String, trusted: Boolean, token: String, keyId: String, info: SystemInfo?, via: AddMethod, fallbackName: String, code: ConnectionCode? = null) {
+        val existing = relogin ?: findDuplicate(code)
         val n = name.trim()
         val entryName = when {
             n.isNotEmpty() -> n
@@ -151,8 +153,7 @@ fun AddServerPage(route: AddServerRoute, onDone: () -> Unit = { AppModel.nav.pop
         }
     }
 
-    fun connectWithCode() {
-        val d = decoded ?: return
+    fun connectWithCode(d: ConnectionCode) {
         busy = true
         error = null
         scope.launch {
@@ -163,7 +164,7 @@ fun AddServerPage(route: AddServerRoute, onDone: () -> Unit = { AppModel.nav.pop
                     ServerAddress.normalize(address)?.let { add(it) }
                     addAll(d.normalizedUrls)
                 }
-                finish(urls, conn.url, d.fingerprint, false, conn.token, conn.keyId, info, if (viaScan) AddMethod.SCAN else AddMethod.CODE, d.name)
+                finish(urls, conn.url, d.fingerprint, false, conn.token, conn.keyId, info, if (viaScan) AddMethod.SCAN else AddMethod.CODE, d.name, d)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -243,7 +244,7 @@ fun AddServerPage(route: AddServerRoute, onDone: () -> Unit = { AppModel.nav.pop
 
     fun submit() {
         if (!canSubmit || busy) return
-        if (mode == AddMode.PASSWORD) probe() else connectWithCode()
+        if (mode == AddMode.PASSWORD) probe() else decoded?.let { connectWithCode(it) }
     }
 
     val title = if (relogin == null) tr("server.add.title") else tr("server.action.relogin")
@@ -298,18 +299,15 @@ fun AddServerPage(route: AddServerRoute, onDone: () -> Unit = { AppModel.nav.pop
                     AddMode.SCAN -> {
                         QrScanner(
                             onScanned = { text ->
-                                if (ConnectionCode.looksLikeCode(text) && ConnectionCode.decodeOrNull(text) != null) {
+                                val d = if (ConnectionCode.looksLikeCode(text)) ConnectionCode.decodeOrNull(text) else null
+                                if (d != null) {
+                                    // 扫到了就直接连接：名称、地址先填好，切到连接码页显示进度
                                     code = text.trim()
                                     viaScan = true
+                                    address = d.urls.firstOrNull().orEmpty()
+                                    if (!nameEdited || name.isBlank()) name = d.name
                                     mode = AddMode.CODE
-                                    // 扫到了就直接连接（地址、名称在解码后填好）
-                                    scope.launch {
-                                        kotlinx.coroutines.yield()
-                                        val d = ConnectionCode.decodeOrNull(code) ?: return@launch
-                                        if (address.isBlank()) address = d.urls.firstOrNull().orEmpty()
-                                        if (!nameEdited || name.isBlank()) name = d.name
-                                        connectWithCode()
-                                    }
+                                    connectWithCode(d)
                                 } else {
                                     cn.lemonit.paperplane.ui.components.Toasts.warning(tr("server.scan.invalid"))
                                 }
@@ -370,7 +368,7 @@ fun AddServerPage(route: AddServerRoute, onDone: () -> Unit = { AppModel.nav.pop
                                 imeAction = ImeAction.Next,
                             )
                         }
-                        PaperTextField(user, { user = it }, label = tr("server.add.user"), imeAction = ImeAction.Next)
+                        PaperTextField(user, { user = it }, label = tr("server.add.user"), keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Next)
                         PaperTextField(password, { password = it }, label = tr("server.add.password"), password = true, onSubmit = ::submit)
                     }
                 }
