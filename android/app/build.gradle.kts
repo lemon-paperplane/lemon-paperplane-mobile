@@ -105,6 +105,14 @@ kotlin {
 
 tasks.named("preBuild") { dependsOn(syncPaperplaneAssets) }
 
+// 网络层联调测试：设置了 PAPERPLANE_TEST_BIN（go build 出来的内核）时才跑，否则自动跳过。
+// 作为任务输入登记，换了内核或开关联调都会重跑测试，不会命中缓存
+tasks.withType<Test>().configureEach {
+    val bin = System.getenv("PAPERPLANE_TEST_BIN").orEmpty()
+    inputs.property("paperplaneTestBin", bin)
+    if (bin.isNotEmpty()) environment("PAPERPLANE_TEST_BIN", bin)
+}
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2025.04.01")
     implementation(composeBom)
@@ -135,6 +143,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("com.squareup.okhttp3:okhttp-tls:4.12.0")
 
     // 界面截图测试：JVM 上用 Robolectric 渲染 Compose，Roborazzi 存 PNG（ui/ 的组件陈列页与关键组件）
     testImplementation(composeBom)
