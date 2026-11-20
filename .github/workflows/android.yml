@@ -69,18 +69,9 @@ jobs:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-${{ hashFiles('lemon-paperplane-mobile/android/app/build.gradle.kts') }}
           restore-keys: robolectric-
-      - name: 端口转发测试（诊断，重复 5 次）
-        continue-on-error: true
-        working-directory: lemon-paperplane-mobile/android
-        run: |
-          for i in 1 2 3 4 5; do
-            ./gradlew testDebugUnitTest --tests '*PortForwarderTest*' --rerun-tasks -Proborazzi.record=false -q 2>&1 | grep -vE '^\s+at ' | head -60 || true
-            echo "---- 第 $i 次结束"
-          done
       - name: 单元测试
         working-directory: lemon-paperplane-mobile/android
-        # 失败时重跑一次：Robolectric 偶尔下载运行库失败（真正的失败第二次也会失败）
-        run: ./gradlew testDebugUnitTest -Proborazzi.record=false || ./gradlew testDebugUnitTest -Proborazzi.record=false --stacktrace
+        run: ./gradlew testDebugUnitTest -Proborazzi.record=false
       - name: 构建 APK
         id: apk
         working-directory: lemon-paperplane-mobile/android

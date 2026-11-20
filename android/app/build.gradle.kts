@@ -124,6 +124,9 @@ tasks.named("preBuild") { dependsOn(syncPaperplaneAssets) }
 // 网络层联调测试：设置了 PAPERPLANE_TEST_BIN（go build 出来的内核）时才跑，否则自动跳过。
 // 作为任务输入登记，换了内核或开关联调都会重跑测试，不会命中缓存
 tasks.withType<Test>().configureEach {
+    // Robolectric 在测试进程里把加密实现换成 Conscrypt（Linux 上才加载得到它的本地库），Conscrypt 在 Java 17+ 上要反射 java.net：
+    // 不开放的话，同一进程里后跑的网络测试（端口转发、本地网关等）TLS 握手失败
+    jvmArgs("--add-opens=java.base/java.net=ALL-UNNAMED")
     // 失败时打出完整异常（云端看日志就能定位，不用下载报告）
     testLogging {
         events("failed")
