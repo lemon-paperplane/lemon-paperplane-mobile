@@ -71,3 +71,16 @@ cd ../../lemon-paperplane-main/lemon-paperplane-main-core && go build -o /tmp/pp
 PAPERPLANE_DATA_DIR=<临时目录> PAPERPLANE_NO_SHELL_ENV=1 /tmp/pp serve --listen 0.0.0.0:47391 &
 PAPERPLANE_DATA_DIR=<临时目录> /tmp/pp server key add phone --address <Mac 的局域网 IP>:47391   # 打印连接码和二维码
 ```
+
+## 6. 功能页开发约定（主框架已就绪后）
+
+- **状态**：`core/AppModel`（单例）+ 各 Store，都是 Compose 快照状态，Composable 里直接读字段即可（不用 collectAsState），只在主线程改。
+  - 调接口：`AppModel.api()`（没连上时抛可展示的错误）配合 kit 里 `OpCaller` 的强类型扩展函数；一次性操作用 `AppModel.perform(title) { api -> ... }`（失败自动提示）；后台任务 `AppModel.track(task)`（结束时提示）。
+  - 数据：`AppModel.data`（工作区、工程摘要、设置、插件贡献、插件、工具链）、`AppModel.runs`（运行、任务）、`AppModel.terminals`、`AppModel.systemInfo`、`AppModel.currentServer`。
+  - 事件：`AppModel.bus` 的 SharedFlow（projectChanged、vcsChanged、toolchainsChanged、pluginsChanged、runChanged、stats、raw、resumed），在 `LaunchedEffect` 里 collect。
+  - 长连接（日志流、终端流）：`net.ConsoleStream / TerminalStream(AppModel.client!!, …)`，`AppModel.foreground` 为 false（切到后台）时停掉，回前台从记住的位置续上；完整历史用 `runLogsPage`、`terminalHistory`。
+  - 网页（编辑器、终端页、插件网页）：`AppModel.gateway()` 的 `editorUrl(...)` / `url(...)`；运行地址在 App 内打开：`AppModel.forwarder().forward(port)`。
+- **导航**：`AppModel.nav`。跨功能页面在 `core/Routes.kt`（ProjectRoute、EditorRoute、TerminalRoute、BrowserRoute、ToolchainsRoute、PluginsRoute、SettingsRoute、PluginViewRoute、VcsHomeRoute），功能内部的二级页面自己实现 `Route`（`key` + `@Composable Content()`）后 `nav.push(...)`。压栈页面一律用 `ui/shell/PageScaffold`；底部标签的根页面（工程 / 启动 / 运行中 / 终端）没有自己的标题栏，顶栏由壳提供。平板上 `LocalWideLayout.current == true`，可以做双栏。
+- **操作**：`core/Actions`（运行、停止、重启、工程与工作区的增删改、复制、外部打开）。
+- **文案**：一律 `tr("key")`，优先复用桌面的键（`shared/i18n/{zh-Hans,en}.json`）；手机专属文案放各功能自己的覆盖文件 `shared/i18n/android/<功能>.<语言>.json`（zh-Hans 与 en 两份、键一致），别改别人的文件。
+- **图标**：`PaperIcon(name)`（`shared/icons/*.svg`，200 多个 Lucide 图标），插件图标 `RefIcon(IconSource)`；缺图标时从 Lucide 补进 `shared/icons/`（格式和现有文件一致）。

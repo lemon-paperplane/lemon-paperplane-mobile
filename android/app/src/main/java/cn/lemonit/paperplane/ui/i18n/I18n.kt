@@ -13,7 +13,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 /**
- * 界面文案。键和桌面共用：先读 shared/i18n/<语言>.json，再用 shared/i18n/android/<语言>.json 的同名键覆盖
+ * 界面文案。键和桌面共用：先读 shared/i18n/<语言>.json，再用 shared/i18n/android/<语言>.json 与 android/<功能>.<语言>.json 的同名键覆盖
  * （手机专属说法，规则同 shared/i18n/windows/）。占位符 {0}{1}…。
  *
  * 查找顺序（对照 Mac Localizer）：当前语言 → 英文 → 键本身。
@@ -140,11 +140,23 @@ object I18n {
 
     private fun load(locale: String): Tables? {
         val en = readTable("i18n/$EN.json") ?: return null
-        val enAll = en + (readTable("i18n/android/$EN.json") ?: emptyMap())
+        val enAll = en + overlay(EN)
         if (locale == EN) return Tables(EN, enAll, enAll)
         val base = readTable("i18n/$locale.json") ?: emptyMap()
-        val table = base + (readTable("i18n/android/$locale.json") ?: emptyMap())
+        val table = base + overlay(locale)
         return Tables(locale, table, enAll)
+    }
+
+    /**
+     * 手机覆盖层：shared/i18n/android/<语言>.json，再叠各功能自己的 android/<功能>.<语言>.json（按文件名顺序）。
+     * 功能各用一个文件，几路同时开发时不会改同一个文件。
+     */
+    private fun overlay(locale: String): Map<String, String> {
+        val out = HashMap<String, String>()
+        readTable("i18n/android/$locale.json")?.let { out.putAll(it) }
+        val names = runCatching { SharedAssets.context()?.assets?.list("shared/i18n/android")?.toList() }.getOrNull().orEmpty()
+        for (n in names.filter { it.endsWith(".$locale.json") }.sorted()) readTable("i18n/android/$n")?.let { out.putAll(it) }
+        return out
     }
 
     private fun readTable(path: String): Map<String, String>? {
