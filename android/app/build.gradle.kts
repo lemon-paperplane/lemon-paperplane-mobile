@@ -124,6 +124,13 @@ tasks.named("preBuild") { dependsOn(syncPaperplaneAssets) }
 // 网络层联调测试：设置了 PAPERPLANE_TEST_BIN（go build 出来的内核）时才跑，否则自动跳过。
 // 作为任务输入登记，换了内核或开关联调都会重跑测试，不会命中缓存
 tasks.withType<Test>().configureEach {
+    // 失败时打出完整异常（云端看日志就能定位，不用下载报告）
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showCauses = true
+        showStackTraces = true
+    }
     val bin = System.getenv("PAPERPLANE_TEST_BIN").orEmpty()
     inputs.property("paperplaneTestBin", bin)
     if (bin.isNotEmpty()) environment("PAPERPLANE_TEST_BIN", bin)
