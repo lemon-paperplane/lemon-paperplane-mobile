@@ -38,6 +38,21 @@ class FakeTunnelServer(private val acceptKey: String = TOKEN) : AutoCloseable {
 
     val base get() = "https://127.0.0.1:${ss.localPort}"
 
+    /**
+     * 回完就关时先优雅收尾：发 close_notify 后等对方读完、关掉再关。
+     * 直接 close 时 Linux 若接收缓冲里还有没读的字节会发 RST，对方还没读到的回复会被一起丢掉（macOS 不会），
+     * 表现为客户端「unexpected end of stream」。
+     */
+    private fun closeGracefully(s: SSLSocket) {
+        try {
+            s.soTimeout = 2000
+            s.shutdownOutput()
+            val buf = ByteArray(1024)
+            while (s.inputStream.read(buf) >= 0) Unit
+        } catch (_: Exception) {
+        }
+    }
+
     private fun handle(s: SSLSocket) {
         s.use {
             val r = BufferedReader(InputStreamReader(s.inputStream, Charsets.UTF_8))
@@ -47,6 +62,7 @@ class FakeTunnelServer(private val acceptKey: String = TOKEN) : AutoCloseable {
                 val body = helloJson()
                 out.write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: ${body.length}\r\n\r\n$body".toByteArray())
                 out.flush()
+                closeGracefully(s)
                 return
             }
             requests += lines.joinToString("\n")
@@ -57,6 +73,7 @@ class FakeTunnelServer(private val acceptKey: String = TOKEN) : AutoCloseable {
                 val body = """{"error":{"code":"unauthorized","message":"invalid or revoked access key"}}"""
                 out.write("HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\nContent-Length: ${body.length}\r\n\r\n$body".toByteArray())
                 out.flush()
+                closeGracefully(s)
                 return
             }
             out.write("HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: paperplane-tunnel\r\n\r\nWELCOME\n".toByteArray())
