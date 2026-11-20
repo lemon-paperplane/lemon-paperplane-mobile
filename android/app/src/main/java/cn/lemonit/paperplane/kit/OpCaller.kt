@@ -37,6 +37,10 @@ class ApiException(
         const val BANNED = "banned"
         /** 服务器证书指纹和保存的不一致 */
         const val FINGERPRINT_MISMATCH = "fingerprint_mismatch"
+        /** 服务器的远程协议版本（hello.apiVersion）和本 App 不同 */
+        const val INCOMPATIBLE = "incompatible"
+        /** 服务器没开账号密码登录（登录时 HTTP 403） */
+        const val PASSWORD_DISABLED = "password_disabled"
     }
 }
 
