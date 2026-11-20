@@ -63,9 +63,24 @@ jobs:
           else
             echo "::warning::没有配置签名密钥（ANDROID_KEYSTORE_BASE64），APK 用临时调试签名，不能覆盖升级"
           fi
+      # Robolectric 运行时下载的安卓运行库（每个 100 MB 以上）缓存起来，免得每次从 Maven 下、偶尔下载失败
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('lemon-paperplane-mobile/android/app/build.gradle.kts') }}
+          restore-keys: robolectric-
+      - name: 端口转发测试（诊断，重复 5 次）
+        continue-on-error: true
+        working-directory: lemon-paperplane-mobile/android
+        run: |
+          for i in 1 2 3 4 5; do
+            ./gradlew testDebugUnitTest --tests '*PortForwarderTest*' --rerun-tasks -Proborazzi.record=false -q 2>&1 | grep -vE '^\s+at ' | head -60 || true
+            echo "---- 第 $i 次结束"
+          done
       - name: 单元测试
         working-directory: lemon-paperplane-mobile/android
-        run: ./gradlew testDebugUnitTest -Proborazzi.record=false --stacktrace
+        # 失败时重跑一次：Robolectric 偶尔下载运行库失败（真正的失败第二次也会失败）
+        run: ./gradlew testDebugUnitTest -Proborazzi.record=false || ./gradlew testDebugUnitTest -Proborazzi.record=false --stacktrace
       - name: 构建 APK
         id: apk
         working-directory: lemon-paperplane-mobile/android
