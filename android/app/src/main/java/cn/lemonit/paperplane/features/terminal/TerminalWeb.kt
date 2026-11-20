@@ -19,7 +19,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import cn.lemonit.paperplane.core.AppModel
 import cn.lemonit.paperplane.core.BrowserRoute
 import cn.lemonit.paperplane.features.editor.EditorWebBridge
@@ -339,7 +338,8 @@ internal fun TerminalSurface(session: TerminalSession, terminalId: String?, allI
                 hostScript = EditorWebBridge.hostScript(TERMINAL_HOST_JS),
                 controller = ctl,
                 background = c.consoleBg,
-                modifier = Modifier.fillMaxSize().alpha(if (ctl.loadError == null && !ctl.crashed) 1f else 0f),
+                // 不给 WebView 加 alpha / graphicsLayer（安卓上会让整页画不出来）；出错时下面的不透明覆盖层盖住它
+                modifier = Modifier.fillMaxSize(),
                 onNavigate = { openLink(it) },
                 newWebView = { TerminalWebView(it) },
             )

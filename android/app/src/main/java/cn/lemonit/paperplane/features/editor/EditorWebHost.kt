@@ -243,6 +243,8 @@ private fun createWebView(
     val origin = Uri.parse(url).let { "${it.scheme}://${it.authority}" }
     val assets = webView.context.applicationContext.assets
     return webView.apply {
+        // 撑满父容器：布局参数是 WRAP_CONTENT 时，安卓 WebView 把网页的视口高度当成 0（100vh = 0，编辑器整页空白）
+        layoutParams = android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT)
         setBackgroundColor(bg)
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true

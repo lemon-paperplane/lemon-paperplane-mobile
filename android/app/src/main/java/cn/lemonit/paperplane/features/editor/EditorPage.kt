@@ -25,7 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.background
 import cn.lemonit.paperplane.core.Actions
 import cn.lemonit.paperplane.core.AppModel
 import cn.lemonit.paperplane.core.EditorRoute
@@ -217,14 +217,16 @@ private fun EditorContent(route: EditorRoute, project: ProjectSummary, rel: Stri
                     hostScript = EditorWebBridge.hostScript(if (wide) "" else SIDEBAR_CLOSED_JS),
                     controller = controller,
                     background = c.bgContent,
-                    modifier = Modifier.fillMaxSize().alpha(if (state.revealed && controller.loadError == null) 1f else 0f),
+                    // 不要给 WebView 加 alpha / graphicsLayer：在安卓上会让整页画不出来（WebView 的绘制和图层合成冲突）。
+                    // 加载中、出错时用不透明的覆盖层盖住
+                    modifier = Modifier.fillMaxSize(),
                     onNavigate = { openLink(it) },
                 )
             }
             val err = controller.loadError
             when {
                 controller.crashed -> PaperEmptyState(
-                    "file-pen", tr("editorWindow.crashed"), Modifier.fillMaxSize(),
+                    "file-pen", tr("editorWindow.crashed"), Modifier.fillMaxSize().background(c.bgContent),
                     actionText = tr("editorWindow.reload"), actionIcon = "refresh-cw",
                 ) {
                     state.revealed = false
@@ -232,13 +234,13 @@ private fun EditorContent(route: EditorRoute, project: ProjectSummary, rel: Stri
                     state.generation++
                 }
                 err != null -> PaperEmptyState(
-                    "file-pen", tr("editorWindow.loadFailed") + "\n" + err, Modifier.fillMaxSize(),
+                    "file-pen", tr("editorWindow.loadFailed") + "\n" + err, Modifier.fillMaxSize().background(c.bgContent),
                     actionText = tr("editorWindow.reload"), actionIcon = "refresh-cw",
                 ) {
                     controller.loadError = null
                     controller.webView?.reload()
                 }
-                !state.revealed -> PaperLoadingPage()
+                !state.revealed -> PaperLoadingPage(Modifier.background(c.bgContent))
             }
         }
     }

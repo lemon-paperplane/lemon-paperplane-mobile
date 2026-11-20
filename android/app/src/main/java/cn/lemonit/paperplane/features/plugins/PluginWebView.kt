@@ -59,6 +59,8 @@ fun PluginWebView(url: String, context: ViewContext, modifier: Modifier = Modifi
         modifier = modifier,
         factory = { ctx ->
             WebView(ctx).apply {
+                // 撑满父容器：WRAP_CONTENT 时网页视口高度会被当成 0（100vh = 0）
+                layoutParams = android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT)
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 setBackgroundColor(bg)

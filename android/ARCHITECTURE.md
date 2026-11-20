@@ -63,6 +63,9 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 
 不用模拟器。要上机测试时由用户插真机（USB 调试），`adb install -r app-debug.apk`，截图 `adb exec-out screencap -p > x.png`，
 点击 `adb shell input tap x y`，界面树 `adb shell uiautomator dump`。平时只编译和跑 JVM 单元测试（网络层可以在单元测试里连本机起的测试服务器）。
+手机上的中文输入法会把 `adb shell input text` 打的英文当拼音吞掉：调试版可以用链接预填「添加服务器」表单，
+`adb shell am start -n cn.lemonit.paperplane/.MainActivity -d "ppdebug://add?address=<地址>&user=<账号>"`（也支持 `code=<连接码>`）。
+WebView 里的网页可以用 Chrome 调试协议看：`adb forward tcp:9333 localabstract:webview_devtools_remote_<进程号>`。
 
 测试服务器（Mac 上起，别动默认数据目录）：
 
@@ -83,4 +86,5 @@ PAPERPLANE_DATA_DIR=<临时目录> /tmp/pp server key add phone --address <Mac �
 - **导航**：`AppModel.nav`。跨功能页面在 `core/Routes.kt`（ProjectRoute、EditorRoute、TerminalRoute、BrowserRoute、ToolchainsRoute、PluginsRoute、SettingsRoute、PluginViewRoute、VcsHomeRoute），功能内部的二级页面自己实现 `Route`（`key` + `@Composable Content()`）后 `nav.push(...)`。压栈页面一律用 `ui/shell/PageScaffold`；底部标签的根页面（工程 / 启动 / 运行中 / 终端）没有自己的标题栏，顶栏由壳提供。平板上 `LocalWideLayout.current == true`，可以做双栏。
 - **操作**：`core/Actions`（运行、停止、重启、工程与工作区的增删改、复制、外部打开）。
 - **文案**：一律 `tr("key")`，优先复用桌面的键（`shared/i18n/{zh-Hans,en}.json`）；手机专属文案放各功能自己的覆盖文件 `shared/i18n/android/<功能>.<语言>.json`（zh-Hans 与 en 两份、键一致），别改别人的文件。
+- **WebView**：布局参数一律 `MATCH_PARENT`（Compose 的 AndroidView 默认 WRAP_CONTENT 时，安卓 WebView 把网页视口高度当成 0，`100vh` 全是 0）；不要给 WebView 加 `Modifier.alpha` / `graphicsLayer`，加载中用不透明覆盖层盖住。关闭连接等可能碰网络的收尾不要放在主线程。
 - **图标**：`PaperIcon(name)`（`shared/icons/*.svg`，200 多个 Lucide 图标），插件图标 `RefIcon(IconSource)`；缺图标时从 Lucide 补进 `shared/icons/`（格式和现有文件一致）。
