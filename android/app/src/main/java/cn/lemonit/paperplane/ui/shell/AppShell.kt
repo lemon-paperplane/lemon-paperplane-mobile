@@ -53,7 +53,7 @@ val WideLayoutMinWidth = 840.dp
 fun AppRoot() {
     PaperplaneTheme {
         Box(Modifier.fillMaxSize().background(PaperTheme.colors.bgChrome)) {
-            if (AppModel.servers.servers.isEmpty()) {
+            if (AppModel.serverList.isEmpty()) {
                 WelcomePage()
             } else {
                 BoxWithConstraints(Modifier.fillMaxSize()) {

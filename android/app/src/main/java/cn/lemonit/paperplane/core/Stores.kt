@@ -184,6 +184,10 @@ class EventBus {
     val vcsChanged = flow<VCSChangedEvent>()
     val toolchainsChanged = flow<Unit>()
     val pluginsChanged = flow<Unit>()
+    /** run.changed（资源曲线等按运行订阅） */
+    val runChanged = flow<cn.lemonit.paperplane.kit.model.Run>()
+    /** stats：每 2 秒一次全部运行中服务的 CPU / 内存 */
+    val stats = flow<List<RunBrief>>()
     /** 任何原始事件 */
     val raw = flow<DaemonEvent>()
     /** 切回前台、重连成功后：各页面重新拉自己的数据（事件流断开期间可能漏了变化） */

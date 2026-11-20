@@ -10,3 +10,8 @@ fun RunningTab() = PendingPage("运行中")
 /** 工程详情的「运行」标签：运行配置选择 + 控制台（configId 为空时用默认配置） */
 @Composable
 fun ProjectRunTab(projectId: String, configId: String?) = PendingPage("运行")
+
+/** 任务日志（失败提示里的「查看日志」）：底部面板显示任务的控制台 */
+object TaskLog {
+    fun show(taskId: String) {}
+}

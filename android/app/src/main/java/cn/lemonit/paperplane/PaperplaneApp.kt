@@ -7,6 +7,7 @@ class PaperplaneApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        cn.lemonit.paperplane.core.AppModel.init(this)
     }
 
     companion object {
