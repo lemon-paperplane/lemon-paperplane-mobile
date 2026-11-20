@@ -20,6 +20,8 @@ import kotlin.concurrent.thread
 class FakeTunnelServer(private val acceptKey: String = TOKEN) : AutoCloseable {
     private val ss: SSLServerSocket
     val requests = ConcurrentLinkedQueue<String>()
+    /** 服务器这一侧的事件与异常（失败时附在测试日志里） */
+    val events = ConcurrentLinkedQueue<String>()
 
     init {
         val certs = HandshakeCertificates.Builder().heldCertificate(TestCerts.selfSigned).build()
@@ -31,7 +33,13 @@ class FakeTunnelServer(private val acceptKey: String = TOKEN) : AutoCloseable {
                 } catch (e: Exception) {
                     break
                 }
-                thread(isDaemon = true) { handle(s) }
+                thread(isDaemon = true) {
+                    try {
+                        handle(s)
+                    } catch (t: Throwable) {
+                        events += "server: $t"
+                    }
+                }
             }
         }
     }
@@ -57,6 +65,7 @@ class FakeTunnelServer(private val acceptKey: String = TOKEN) : AutoCloseable {
         s.use {
             val r = BufferedReader(InputStreamReader(s.inputStream, Charsets.UTF_8))
             val lines = generateSequence { r.readLine() }.takeWhile { it.isNotEmpty() }.toList()
+            events += "server: ${s.session.protocol} ${s.session.cipherSuite} request ${lines.firstOrNull()}"
             val out = s.outputStream
             if (lines.firstOrNull()?.startsWith("GET /api/v1/auth/hello ") == true) {
                 val body = helloJson()
@@ -108,7 +117,8 @@ class PortForwarderTest {
                 try {
                     base.evaluate()
                 } catch (t: Throwable) {
-                    throw AssertionError("${t}\n--- 日志 ---\n" + logs.joinToString("\n"), t)
+                    val ev = if (::server.isInitialized) server.events.joinToString("\n") else ""
+                    throw AssertionError("${t}\n--- 日志 ---\n" + logs.joinToString("\n") + "\n--- 服务器 ---\n" + ev, t)
                 }
             }
         }
