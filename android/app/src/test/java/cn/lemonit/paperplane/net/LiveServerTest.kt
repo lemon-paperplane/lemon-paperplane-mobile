@@ -312,13 +312,13 @@ class LiveServerTest {
         val taskId = task["id"]!!.jsonPrimitive.content
         val cs = ConsoleStream(c, taskId)
         val updates = blocking { cs.updates().toList() }
-        assertTrue(updates.any { it is ConsoleStream.Update.Lines })
+        assertTrue(updates.any { it is ConsoleStream.Update.Lines && it.lines.isNotEmpty() })
         assertTrue(updates.last() is ConsoleStream.Update.Ended)
         assertTrue(cs.lastSeq >= 1)
-        // 从最后的 seq 续传：只剩 end
+        // 从最后的 seq 续传：只剩 end（新内核连上后的第一条消息可能只带实时尾部，没有定型行）
         val again = ConsoleStream(c, taskId, since = cs.lastSeq)
         val rest = blocking { again.updates().toList() }
-        assertFalse(rest.any { it is ConsoleStream.Update.Lines })
+        assertFalse(rest.any { it is ConsoleStream.Update.Lines && it.lines.isNotEmpty() })
         assertTrue(rest.last() is ConsoleStream.Update.Ended)
         c.close()
     }

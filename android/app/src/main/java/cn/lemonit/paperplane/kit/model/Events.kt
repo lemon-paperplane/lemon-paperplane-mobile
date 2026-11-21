@@ -5,8 +5,10 @@ import java.util.Base64
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 
 // 三条 SSE 流里的数据（docs/api.md 第 3 节）。网络层（net）只负责连接、断线续传，把每条消息的
 // event 名与 data 原文交给上层，由这里的函数解码：
@@ -133,25 +135,50 @@ sealed interface EventPayload {
 
 // ---------------------------------------------------------------- 控制台日志流
 
-/** 控制台日志流的一条 data：{"lines": [LogLine...]}（批量，最多 100ms 合并一次，每批最多 500 行） */
+/**
+ * 控制台日志流的一条 data：{"lines": [LogLine...], "live": [LogLine...]}（批量，最多 100ms 合并一次，每批最多 500 行）。
+ * live 键是否存在有含义（缺省 = 实时尾部不变），按这个类解码分不出来，解析用 [ConsoleStreamMessage.parse]。
+ */
 @Serializable
 data class LogBatch(val lines: List<LogLine> = emptyList())
 
 sealed interface ConsoleStreamMessage {
-    /** 一批新行（seq 递增；断线后用最后一行的 seq 作为 since 续传） */
-    data class Lines(val lines: List<LogLine>) : ConsoleStreamMessage
+    /**
+     * 一条消息：新定型的行 + 实时尾部。
+     *
+     * - lines：已定型的行（seq 递增、落盘；断线后用最后一行的 seq 作为 since 续传），可能为空；
+     * - live：实时尾部（伪终端里还在被程序原地改写的屏幕末尾几行，如 docker push / gradle 的进度条；seq 为 0，不推进续传位置）。
+     *   null = 消息里没有 live 键，实时尾部保持不变（老内核从不发）；非 null = 整体替换（空列表 = 清空）。
+     *
+     * 应用顺序：先追加 lines，再替换 live；实时尾部永远显示在所有已定型行后面。
+     */
+    data class Lines(val lines: List<LogLine>, val live: List<LogLine>? = null) : ConsoleStreamMessage
 
-    /** 控制台结束（event: end），之后不会再有输出，不用重连 */
+    /** 控制台结束（event: end），之后不会再有输出，不用重连；实时尾部清空 */
     data object End : ConsoleStreamMessage
 
     companion object {
         const val EVENT_END = "end"
+        const val KEY_LINES = "lines"
+        const val KEY_LIVE = "live"
 
-        /** event 为 SSE 的 event 名（没有时传 null 或 "message"），data 为原文；空批次与不合法的返回 null */
+        /**
+         * event 为 SSE 的 event 名（没有时传 null 或 "message"），data 为原文；
+         * 既没有新行也没有 live 键的（空批次）与不合法的返回 null。live 键的值是 null 时按空列表（清空）处理。
+         */
         fun parse(event: String?, data: String): ConsoleStreamMessage? {
             if (event == EVENT_END) return End
-            val batch = runCatching { PaperplaneJson.decodeFromString(LogBatch.serializer(), data) }.getOrNull() ?: return null
-            return if (batch.lines.isEmpty()) null else Lines(batch.lines)
+            val obj = runCatching { PaperplaneJson.parseToJsonElement(data) as? JsonObject }.getOrNull() ?: return null
+            val lines = logLines(obj[KEY_LINES]) ?: return null
+            val live = if (obj.containsKey(KEY_LIVE)) logLines(obj[KEY_LIVE]) ?: return null else null
+            return if (lines.isEmpty() && live == null) null else Lines(lines, live)
+        }
+
+        /** 缺省或 null 时为空列表；不是数组、或数组里有解不出来的行时为 null（整条消息不合法） */
+        private fun logLines(el: JsonElement?): List<LogLine>? = when (el) {
+            null, JsonNull -> emptyList()
+            is JsonArray -> runCatching { PaperplaneJson.decodeFromJsonElement(ListSerializer(LogLine.serializer()), el) }.getOrNull()
+            else -> null
         }
     }
 }

@@ -95,14 +95,23 @@ class EventStream(client: RemoteClient) : RemoteStream<EventStream.Update>(clien
 
 /**
  * 控制台日志流 GET /api/v1/consoles/<consoleId>/stream?since=<seq>（consoleId = runId 或 taskId）。
- * 记住收到的最后一个 seq，断线、stop 后再 start 都从它续传（不重复）；收到 event: end 后结束。
+ * 记住收到的最后一个已定型 seq，断线、stop 后再 start 都从它续传（不重复）；收到 event: end 后结束。
+ *
+ * 实时尾部（data 里的 live 键，见 [Update.Lines.live]）不推进 seq；新内核每次（重）连上后第一条消息一定带 live，
+ * 所以续上后以它为准。老内核从不发 live，行为和以前一样。
  */
 class ConsoleStream(client: RemoteClient, val consoleId: String, since: Long = 0) : RemoteStream<ConsoleStream.Update>(client) {
     sealed interface Update {
         data object Connected : Update
 
-        /** 一批日志行：LogLine 的原始 JSON（{seq, t, s, text}），按 seq 递增 */
-        data class Lines(val lines: List<JsonObject>) : Update
+        /**
+         * 同一条 SSE 消息里的已定型行与实时尾部（一次交出去，调用方先追加 lines 再替换 live，中间不要挂起）。
+         *
+         * @param lines 新定型的日志行：LogLine 的原始 JSON（{seq, t, s, text}），按 seq 递增，已去掉重复；可能为空（只有 live 的消息）
+         * @param live 实时尾部（LogLine 的原始 JSON，seq 为 0）：null = 消息里没有 live 键，实时尾部保持不变；
+         *   非 null = 整体替换（空列表 = 清空；live 键的值是 JSON null 时也按清空）
+         */
+        data class Lines(val lines: List<JsonObject>, val live: List<JsonObject>? = null) : Update
 
         /** 控制台结束（运行停止 / 任务完成），之后不会再有日志 */
         data object Ended : Update
@@ -121,16 +130,21 @@ class ConsoleStream(client: RemoteClient, val consoleId: String, since: Long = 0
                 SseConnection.Event.Open -> listener(Update.Connected)
                 is SseConnection.Event.Message -> {
                     if (ev.message.event != null) return@sse
-                    val arr = parse(ev.message.data)?.get("lines") as? JsonArray ?: return@sse
-                    val out = ArrayList<JsonObject>(arr.size)
-                    for (el in arr) {
-                        val line = el as? JsonObject ?: continue
-                        val seq = (line["seq"] as? JsonPrimitive)?.longOrNull ?: continue
-                        if (seq <= last.get()) continue
-                        last.set(seq)
-                        out += line
+                    val o = parse(ev.message.data) ?: return@sse
+                    val arr = o["lines"] as? JsonArray
+                    val out = ArrayList<JsonObject>(arr?.size ?: 0)
+                    if (arr != null) {
+                        for (el in arr) {
+                            val line = el as? JsonObject ?: continue
+                            val seq = (line["seq"] as? JsonPrimitive)?.longOrNull ?: continue
+                            if (seq <= last.get()) continue
+                            last.set(seq)
+                            out += line
+                        }
                     }
-                    if (out.isNotEmpty()) listener(Update.Lines(out))
+                    // 实时尾部：键存在就整体替换（不是数组时按清空），键缺省时保持不变（null）
+                    val live = if (o.containsKey("live")) (o["live"] as? JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty() else null
+                    if (out.isNotEmpty() || live != null) listener(Update.Lines(out, live))
                 }
                 is SseConnection.Event.Disconnected -> listener(Update.Disconnected(ev.error, ev.retrying))
                 SseConnection.Event.Ended -> listener(Update.Ended)

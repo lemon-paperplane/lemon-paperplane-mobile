@@ -10,6 +10,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -93,6 +94,7 @@ class StreamsTest {
         cs.start(col.add)
         val first = col.nextOf<ConsoleStream.Update.Lines>()
         assertEquals(listOf(1L, 2L), first.lines.map { it["seq"]!!.jsonPrimitive.long })
+        assertNull(first.live) // 老内核没有 live 键：实时尾部不变
         assertTrue(col.nextOf<ConsoleStream.Update.Disconnected>().retrying)
         val second = col.nextOf<ConsoleStream.Update.Lines>()
         assertEquals(listOf(3L), second.lines.map { it["seq"]!!.jsonPrimitive.long }) // 重复的 seq 2 去掉了
@@ -115,6 +117,47 @@ class StreamsTest {
         // 再收集一次：从 5 续传
         blocking { cs.updates().first { it is ConsoleStream.Update.Ended } }
         assertEquals(listOf("/api/v1/consoles/r/stream?since=4", "/api/v1/consoles/r/stream?since=5"), streamRequests(2))
+    }
+
+    @Test
+    fun consoleStreamLiveTail() {
+        fun live(vararg texts: String) = texts.joinToString(",", "[", "]") { """{"seq":0,"t":0,"s":"stdout","text":"$it"}""" }
+        serve(
+            sse(
+                "data: {\"lines\":[{\"seq\":1,\"text\":\"a\"}],\"live\":${live("50%")}}\n\n" + // 定型行 + 实时尾部
+                    "data: {\"lines\":[{\"seq\":2,\"text\":\"b\"}]}\n\n" + // 没有 live 键：保持不变
+                    "data: {\"live\":${live("60%", "layer 2")}}\n\n" + // 只有 live
+                    "data: {\"lines\":[],\"live\":[]}\n\n", // 清空
+            ),
+            sse(
+                // 重连后的第一条：重复的定型行去掉，live 照样交出
+                "data: {\"lines\":[{\"seq\":2,\"text\":\"b\"}],\"live\":${live("70%")}}\n\n" +
+                    "data: {\"lines\":[],\"live\":null}\n\n" + // live 键的值是 null：按清空
+                    "data: {\"lines\":[]}\n\n" + // 什么都没有：不交出
+                    "event: end\ndata: {}\n\n",
+            ),
+        )
+        val cs = ConsoleStream(c, "r")
+        val all = blocking { cs.updates().toList() }
+        assertTrue(all.last() is ConsoleStream.Update.Ended)
+        assertTrue(all.any { it is ConsoleStream.Update.Disconnected && it.retrying })
+        val got = all.filterIsInstance<ConsoleStream.Update.Lines>().map { u ->
+            u.lines.map { it["seq"]!!.jsonPrimitive.long } to u.live?.map { it["text"]!!.jsonPrimitive.content }
+        }
+        assertEquals(
+            listOf(
+                listOf(1L) to listOf("50%"),
+                listOf(2L) to null,
+                emptyList<Long>() to listOf("60%", "layer 2"),
+                emptyList<Long>() to emptyList(),
+                emptyList<Long>() to listOf("70%"),
+                emptyList<Long>() to emptyList(),
+            ),
+            got,
+        )
+        // 实时行不推进续传位置
+        assertEquals(2L, cs.lastSeq)
+        assertEquals(listOf("/api/v1/consoles/r/stream?since=0", "/api/v1/consoles/r/stream?since=2"), streamRequests(2))
     }
 
     @Test

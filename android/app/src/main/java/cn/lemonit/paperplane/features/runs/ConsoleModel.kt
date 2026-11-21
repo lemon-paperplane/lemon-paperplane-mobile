@@ -20,6 +20,10 @@ import cn.lemonit.paperplane.kit.model.LogLine
 //   - 内存上限 MAX_LINES：超出时丢掉离用户远的一头。丢掉的是末尾时窗口脱离最新（attached = false），
 //     实时行先不追加，等用户滚回底部再按页往后补，补到最新再接上实时；
 //   - 流断开重连后（切回前台）服务器只补发内存缓冲里的行，中间可能缺一段：发现缺口时同样先脱离、按页补齐。
+// 实时尾部（live）：伪终端里还在被程序原地改写的屏幕末尾几行（docker push / gradle / buildkit 的进度条），
+//   内核随时整体推送、这里整体替换；不进窗口（不计入行数上限、不推进 seq），只在窗口接上最新时显示在所有已定型行后面。
+//   每行的 ANSI 样式自包含，各用一个新的解析器，不碰已定型行跨行延续的样式（tailParser）。
+//   行的 seq 是界面编号 LIVE_SEQ + 下标：比任何真 seq 都大，搜索、选择、列表 key 都能和已定型行统一按 seq 处理。
 // 解析（ANSI 拆段）在入窗口前做一次，结果缓存在 ConsoleLine 里，界面只按需把段落转成带颜色的文字。
 
 /** 控制台里的一行（ANSI 已解析） */
@@ -35,7 +39,9 @@ class ConsoleLine(
     /** 显示宽度（字符数，宽字符算 2）：不换行时算横向滚动的宽度 */
     val width: Int,
 ) {
-    override fun equals(other: Any?): Boolean = other is ConsoleLine && other.seq == seq && other.text == text && other.stream == stream
+    // 比较也看着色段落：实时尾部的同一行可能只变颜色、文字不变
+    override fun equals(other: Any?): Boolean = other === this ||
+        (other is ConsoleLine && other.seq == seq && other.text == text && other.stream == stream && other.spans == spans)
     override fun hashCode(): Int = seq.hashCode()
 }
 
@@ -46,6 +52,13 @@ data class ConsoleMatch(val seq: Long, val start: Int, val end: Int)
 object ConsoleParse {
     /** 解析一批行（parser 的样式跨行保留，和终端一致） */
     fun lines(list: List<LogLine>, parser: ANSIParser): List<ConsoleLine> = list.map { line(it, parser) }
+
+    /**
+     * 解析实时尾部：每行样式自包含，各用一个新的解析器（不改已定型行用的那份跨行状态）；
+     * seq 换成界面编号 [ConsoleState.LIVE_SEQ] + 下标（实时行在协议里 seq 都是 0）。
+     */
+    fun live(list: List<LogLine>): List<ConsoleLine> =
+        list.mapIndexed { i, l -> line(l.copy(seq = ConsoleState.LIVE_SEQ + i), ANSIParser()) }
 
     fun line(l: LogLine, parser: ANSIParser): ConsoleLine {
         val spans = if (l.text.indexOf('\u001B') < 0 && l.text.indexOf('\r') < 0 && l.text.indexOf('\b') < 0 && parser.style.isPlain) {
@@ -141,6 +154,11 @@ class ConsoleState(val consoleId: String?, val maxLines: Int = MAX_LINES) {
     /** 已加载行里最长的显示宽度（不换行时横向滚动用） */
     var maxWidth by mutableIntStateOf(0)
         private set
+    /** 实时尾部（整体替换，见文件开头）；界面显示用 [liveRows] */
+    var live by mutableStateOf<List<ConsoleLine>>(emptyList())
+        private set
+    /** 实时尾部出现过的最长显示宽度（进度条数字变化时横向宽度不来回跳；尾部清空时归零） */
+    private var liveWidth by mutableIntStateOf(0)
     /** 已经拿到过第一批数据 */
     var initialized = false
         private set
@@ -172,6 +190,21 @@ class ConsoleState(val consoleId: String?, val maxLines: Int = MAX_LINES) {
 
     /** 往后还有没加载的行（窗口脱离了最新） */
     val hasNewer: Boolean get() = !attached || latestSeq > hi
+
+    /** 界面上显示的实时尾部：只在窗口接上最新时显示（脱离时窗口末尾和实时尾部之间还隔着没加载的行） */
+    val liveRows: List<ConsoleLine> get() = if (attached) live else emptyList()
+
+    /** 显示的行数：已定型行 + 实时尾部（列表里在顶部那一项之后、底部那一项之前） */
+    val rowCount: Int get() = lines.size + liveRows.size
+
+    /** 有内容可显示（已定型行或实时尾部） */
+    val hasContent: Boolean get() = lines.isNotEmpty() || liveRows.isNotEmpty()
+
+    /** 显示的最后一行（实时尾部优先） */
+    val lastRow: ConsoleLine? get() = liveRows.lastOrNull() ?: lines.lastOrNull()
+
+    /** 不换行时横向滚动的宽度：已加载行和实时尾部里最长的 */
+    val contentWidth: Int get() = maxOf(maxWidth, if (liveRows.isEmpty()) 0 else liveWidth)
 
     /** 第一批数据：最近若干行 + 服务器最新的 seq */
     fun reset(list: List<ConsoleLine>, last: Long) {
@@ -251,6 +284,23 @@ class ConsoleState(val consoleId: String?, val maxLines: Int = MAX_LINES) {
         bump()
     }
 
+    /**
+     * 整体替换实时尾部（rows 由 [ConsoleParse.live] 解析；空 = 清空）。不动窗口、seq 与行数上限。
+     * 和同一条消息里的已定型行一起到时，调用方先 [appendLive] 再调这里，中间不挂起。
+     */
+    fun replaceLive(rows: List<ConsoleLine>) {
+        if (rows == live) return
+        live = rows
+        liveWidth = if (rows.isEmpty()) 0 else maxOf(liveWidth, rows.maxOf { it.width })
+        bump()
+    }
+
+    /** 控制台结束（event: end）：不会再有输出，实时尾部清空 */
+    fun markEnded() {
+        ended = true
+        replaceLive(emptyList())
+    }
+
     /** 窗口不在末尾时，实时流只记下最新的 seq */
     fun noteLatest(seq: Long) {
         if (seq > latestSeq) latestSeq = seq
@@ -310,6 +360,8 @@ class ConsoleState(val consoleId: String?, val maxLines: Int = MAX_LINES) {
         attached = true
         lines.clear()
         maxWidth = 0
+        live = emptyList()
+        liveWidth = 0
         matches = emptyList()
         matchesBySeq = emptyMap()
         matchIndex = 0
@@ -348,8 +400,12 @@ class ConsoleState(val consoleId: String?, val maxLines: Int = MAX_LINES) {
         loading = false
     }
 
-    /** 某个 seq 在窗口里的下标；不在时返回 -1 */
+    /** 某个 seq 在显示的行里的下标（实时尾部排在已定型行后面）；不在时返回 -1 */
     fun indexOf(seq: Long): Int {
+        if (seq >= LIVE_SEQ) {
+            val i = seq - LIVE_SEQ
+            return if (i < liveRows.size) lines.size + i.toInt() else -1
+        }
         var a = 0
         var b = lines.size - 1
         while (a <= b) {
@@ -394,9 +450,9 @@ class ConsoleState(val consoleId: String?, val maxLines: Int = MAX_LINES) {
     }
 
     fun selectAll() {
-        if (lines.isEmpty()) return
-        selAnchor = lines.first().seq
-        selEnd = lines.last().seq
+        val first = lines.firstOrNull() ?: liveRows.firstOrNull() ?: return
+        selAnchor = first.seq
+        selEnd = lastRow?.seq
     }
 
     fun cancelSelection() {
@@ -416,14 +472,21 @@ class ConsoleState(val consoleId: String?, val maxLines: Int = MAX_LINES) {
             val b = selEnd ?: a
             val lo = minOf(a, b)
             val hi = maxOf(a, b)
-            return lines.count { it.seq in lo..hi }
+            return lines.count { it.seq in lo..hi } + liveRows.count { it.seq in lo..hi }
         }
 
-    /** 选中的文本（没选时为全部已加载的行） */
+    /** 已定型行 + 显示中的实时尾部（搜索、复制用的快照） */
+    fun rowsSnapshot(): List<ConsoleLine> {
+        val tail = liveRows
+        return if (tail.isEmpty()) lines.toList() else ArrayList<ConsoleLine>(lines.size + tail.size).apply { addAll(lines); addAll(tail) }
+    }
+
+    /** 选中的文本（没选时为全部已加载的行，含实时尾部） */
     fun selectedText(): String {
         val a = selAnchor
         val b = selEnd ?: a
-        val list = if (a == null || b == null) lines.toList() else lines.filter { it.seq in minOf(a, b)..maxOf(a, b) }
+        val all = rowsSnapshot()
+        val list = if (a == null || b == null) all else all.filter { it.seq in minOf(a, b)..maxOf(a, b) }
         return list.joinToString("\n") { it.text }
     }
 
@@ -453,13 +516,17 @@ class ConsoleState(val consoleId: String?, val maxLines: Int = MAX_LINES) {
         /** 第一次显示最近多少行 */
         const val INITIAL = 500
 
-        /** 预览、截图测试用：直接放一批行 */
-        fun preview(lines: List<LogLine>, ended: Boolean = false): ConsoleState {
+        /** 实时尾部行的界面编号起点（比任何服务器 seq 都大） */
+        const val LIVE_SEQ = Long.MAX_VALUE / 2
+
+        /** 预览、截图测试用：直接放一批行（可带实时尾部） */
+        fun preview(lines: List<LogLine>, ended: Boolean = false, live: List<LogLine> = emptyList()): ConsoleState {
             val s = ConsoleState(null)
             val parser = ANSIParser()
             s.reset(ConsoleParse.lines(lines, parser), lines.lastOrNull()?.seq ?: 0)
             s.firstAvailable = lines.firstOrNull()?.seq ?: 1
             s.ended = ended
+            if (!ended) s.replaceLive(ConsoleParse.live(live))
             return s
         }
     }

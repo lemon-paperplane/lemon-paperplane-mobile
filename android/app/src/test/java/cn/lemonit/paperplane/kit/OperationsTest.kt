@@ -341,10 +341,36 @@ class OperationsTest {
         assertEquals(3, msgs.size) // 空批次跳过
         val first = msgs[0] as ConsoleStreamMessage.Lines
         assertEquals(listOf(18L, 19L), first.lines.map { it.seq })
+        assertNull(first.live) // 没有 live 键：实时尾部保持不变
         assertEquals("tick 7", ANSIParser.strip(first.lines[0].text))
         assertEquals(20L, (msgs[1] as ConsoleStreamMessage.Lines).lines.single().seq)
         assertEquals(ConsoleStreamMessage.End, msgs[2])
         assertNull(ConsoleStreamMessage.parse(null, "garbage"))
+    }
+
+    @Test
+    fun consoleStreamLiveTail() {
+        fun parse(data: String) = ConsoleStreamMessage.parse(null, data)
+        val live = """[{"seq":0,"t":0,"s":"stdout","text":"\u001b[32m50%"},{"seq":0,"t":0,"s":"stdout","text":"layer 2"}]"""
+        // 定型行 + 实时尾部
+        val both = parse("""{"lines":[{"seq":7,"t":1,"s":"stdout","text":"a"}],"live":$live}""") as ConsoleStreamMessage.Lines
+        assertEquals(listOf(7L), both.lines.map { it.seq })
+        assertEquals(listOf("\u001b[32m50%", "layer 2"), both.live!!.map { it.text })
+        assertEquals(listOf(0L, 0L), both.live!!.map { it.seq })
+        // 只有实时尾部
+        val only = parse("""{"live":$live}""") as ConsoleStreamMessage.Lines
+        assertTrue(only.lines.isEmpty())
+        assertEquals(2, only.live!!.size)
+        // 空数组 = 清空（和键缺省区分开）；null 值也按清空
+        assertEquals(emptyList<Any>(), (parse("""{"lines":[],"live":[]}""") as ConsoleStreamMessage.Lines).live)
+        assertEquals(emptyList<Any>(), (parse("""{"live":null}""") as ConsoleStreamMessage.Lines).live)
+        // 没有 live 键：实时尾部不变
+        assertNull((parse("""{"lines":[{"seq":8,"text":"b"}]}""") as ConsoleStreamMessage.Lines).live)
+        // 既没有新行也没有 live 键：跳过
+        assertNull(parse("""{"lines":[]}"""))
+        assertNull(parse("{}"))
+        // live 不合法：整条跳过
+        assertNull(parse("""{"lines":[],"live":"x"}"""))
     }
 
     @Test

@@ -165,6 +165,150 @@ class ConsoleModelTest {
         assertEquals(-1, s.indexOf(9))
     }
 
+    private fun liveRows(vararg texts: String) = ConsoleParse.live(texts.map { LogLine(0, 0, "stdout", it) })
+
+    @Test
+    fun liveTailReplacesWithoutTouchingWindow() {
+        val s = ConsoleState("r1", maxLines = 100)
+        s.reset(lines(1L..100L), 100)
+        val v0 = s.version
+        s.replaceLive(liveRows("pushing 10%", "layer b 0%"))
+        assertTrue(s.version > v0)
+        // 实时行用界面编号，排在所有已定型行之后；不进窗口、不推进 seq
+        assertEquals(listOf(ConsoleState.LIVE_SEQ, ConsoleState.LIVE_SEQ + 1), s.liveRows.map { it.seq })
+        assertEquals(100, s.lines.size)
+        assertEquals(100L, s.hi)
+        assertEquals(100L, s.latestSeq)
+        assertEquals(102, s.rowCount)
+        assertEquals("layer b 0%", s.lastRow?.text)
+        // 同样的内容不重复刷新
+        val v1 = s.version
+        s.replaceLive(liveRows("pushing 10%", "layer b 0%"))
+        assertEquals(v1, s.version)
+        // 行数上限只算已定型行
+        assertFalse(s.appendLive(lines(101L..105L)))
+        assertEquals(105, s.lines.size)
+        assertEquals(105L, s.hi)
+        assertEquals(2, s.liveRows.size)
+        s.appendLive(lines(106L..115L))
+        assertEquals(100, s.lines.size) // 超出 10% 才裁，丢开头
+        assertEquals(2, s.liveRows.size)
+        // 整体替换（变短）、清空
+        s.replaceLive(liveRows("done"))
+        assertEquals(listOf("done"), s.liveRows.map { it.text })
+        s.replaceLive(emptyList())
+        assertFalse(s.liveRows.isNotEmpty())
+        assertEquals(s.lines.size, s.rowCount)
+    }
+
+    @Test
+    fun liveTailHiddenWhileDetached() {
+        val s = ConsoleState("r1")
+        s.reset(lines(1L..10L), 10)
+        s.replaceLive(liveRows("50%"))
+        assertTrue(s.hasContent)
+        assertEquals(11, s.rowCount)
+        // 缺口：窗口脱离最新，实时尾部和窗口末尾之间隔着没加载的行，先不显示（但记着）
+        assertTrue(s.appendLive(lines(20L..21L)))
+        assertFalse(s.attached)
+        assertTrue(s.liveRows.isEmpty())
+        assertEquals(1, s.live.size)
+        assertEquals(10, s.rowCount)
+        assertEquals(-1, s.indexOf(ConsoleState.LIVE_SEQ))
+        // 脱离时来的实时尾部也记着，补齐接上后显示
+        s.replaceLive(liveRows("60%"))
+        s.appendNewer(lines(11L..21L), 21)
+        assertTrue(s.attached)
+        assertEquals(listOf("60%"), s.liveRows.map { it.text })
+        assertEquals(21, s.indexOf(ConsoleState.LIVE_SEQ))
+    }
+
+    @Test
+    fun liveTailEndAndClear() {
+        val s = ConsoleState("r1")
+        s.reset(lines(1L..5L), 5)
+        s.replaceLive(liveRows("a", "b"))
+        s.markEnded()
+        assertTrue(s.ended)
+        assertTrue(s.live.isEmpty())
+        val t = ConsoleState("r2")
+        t.reset(lines(1L..5L), 5)
+        t.replaceLive(liveRows("a".repeat(300)))
+        assertEquals(300, t.contentWidth)
+        t.clear()
+        assertTrue(t.live.isEmpty())
+        assertFalse(t.hasContent)
+        assertEquals(0, t.contentWidth)
+        // 只有实时尾部、还没有任何定型行时也算有内容
+        t.replaceLive(liveRows("downloading"))
+        assertTrue(t.hasContent)
+        assertEquals(1, t.rowCount)
+        assertEquals("downloading", t.selectedText())
+    }
+
+    @Test
+    fun liveTailWidthHoldsUntilCleared() {
+        val s = ConsoleState("r1")
+        s.reset(ConsoleParse.lines(listOf(log(1, "short")), ANSIParser()), 1)
+        assertEquals(5, s.contentWidth)
+        s.replaceLive(liveRows("x".repeat(40)))
+        assertEquals(40, s.contentWidth)
+        // 进度条数字变短时横向宽度不跟着缩
+        s.replaceLive(liveRows("x".repeat(38)))
+        assertEquals(40, s.contentWidth)
+        s.replaceLive(emptyList())
+        assertEquals(5, s.contentWidth)
+    }
+
+    @Test
+    fun liveTailStylesAreSelfContained() {
+        // 已定型行的样式跨行延续（红色没闭合）
+        val tail = ANSIParser()
+        ConsoleParse.lines(listOf(log(1, "\u001B[31mred")), tail)
+        // 实时行：每行自包含，没闭合的绿色不会带到下一行，也不改已定型行的解析器
+        val live = liveRows("\u001B[32mgreen 50%", "plain", "\u001B[1mbold\u001B[0m tail")
+        assertEquals(ANSIColor.Palette(2), live[0].spans!![0].style.fg)
+        assertNull(live[1].spans)
+        assertEquals("bold tail", live[2].text)
+        assertEquals(ANSIColor.Palette(1), tail.style.fg)
+        assertEquals(ANSIColor.Palette(1), ConsoleParse.line(log(2, "still red"), tail).spans!![0].style.fg)
+        // 只变颜色、文字不变也算变化（界面要重画）
+        val s = ConsoleState("r1")
+        s.reset(emptyList(), 0)
+        s.replaceLive(liveRows("\u001B[33mPushing"))
+        val v = s.version
+        s.replaceLive(liveRows("\u001B[32mPushing"))
+        assertTrue(s.version > v)
+    }
+
+    @Test
+    fun liveTailSearchSelectionAndCopy() {
+        val p = ANSIParser()
+        val s = ConsoleState("r1")
+        s.reset(ConsoleParse.lines(listOf(log(1, "push start"), log(2, "ok")), p), 2)
+        s.replaceLive(liveRows("layer a: Pushing 10%", "layer b: Waiting"))
+        val rows = s.rowsSnapshot()
+        assertEquals(4, rows.size)
+        // 搜索覆盖实时尾部，结果在已定型行之后
+        val m = ConsoleSearch.find(rows, "push")
+        assertEquals(listOf(1L, ConsoleState.LIVE_SEQ), m.map { it.seq })
+        s.setMatches(m, keepIndex = false)
+        assertEquals(ConsoleState.LIVE_SEQ, s.currentMatch?.seq)
+        assertEquals(2, s.indexOf(ConsoleState.LIVE_SEQ)) // 显示下标：两行定型行之后
+        assertEquals(3, s.indexOf(ConsoleState.LIVE_SEQ + 1))
+        assertEquals(-1, s.indexOf(ConsoleState.LIVE_SEQ + 2))
+        // 没选时复制全部（含实时尾部）
+        assertEquals("push start\nok\nlayer a: Pushing 10%\nlayer b: Waiting", s.selectedText())
+        // 从定型行选到实时行
+        s.startSelection(2)
+        s.extendSelection(ConsoleState.LIVE_SEQ)
+        assertEquals(2, s.selectedCount)
+        assertEquals("ok\nlayer a: Pushing 10%", s.selectedText())
+        s.selectAll()
+        assertEquals(4, s.selectedCount)
+        assertEquals(ConsoleState.LIVE_SEQ + 1, s.selEnd)
+    }
+
     @Test
     fun relativeTime() {
         I18n.install("en", mapOf("vcs.date.agoMinutes" to "{0} min. ago", "vcs.date.agoDays" to "{0} days ago"))

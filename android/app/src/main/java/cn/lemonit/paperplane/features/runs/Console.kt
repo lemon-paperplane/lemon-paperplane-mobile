@@ -109,11 +109,14 @@ import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
 
 // 控制台（对照 Mac Components/Console.swift）：ANSI 着色、自动跟随底部、搜索高亮与上一个 / 下一个、
 // 往上滑到顶自动按页读更早的日志（直到服务器能读到的第一行，App 被杀掉再回来也能看完整日志）、
 // 长按一行进入选择（再点另一行选中一段）复制、向运行中的进程输入、日志里的地址可点（localhost 先转发）。
 // 实时部分用 ConsoleStream，App 切到后台时停、回前台从记住的位置续上（中间缺的按页补齐）。
+// 内核在伪终端里跑的进度条等原地刷新的末尾几行作为「实时尾部」单独推送，整体替换后显示在所有已定型行后面
+// （见 ConsoleModel.kt 开头）；续上后以新连接第一条消息里的 live 为准，控制台结束时清空。
 
 // ---------------------------------------------------------------- 网络
 
@@ -142,27 +145,39 @@ internal object ConsoleLoader {
         ConsoleStream(client, id, since).updates().collect { u ->
             when (u) {
                 is ConsoleStream.Update.Lines -> {
-                    val logs = u.lines.mapNotNull { runCatching { PaperplaneJson.decodeFromJsonElement(LogLine.serializer(), it) }.getOrNull() }
-                    if (logs.isEmpty()) return@collect
-                    if (state.attached) {
-                        // 实时批次一般很小（服务器 100ms 合并一次），直接在主线程解析；输出很猛、一批很多行时放到后台线程
-                        // （collect 是一批一批顺序处理的，样式的先后不会乱）
-                        val parsed = if (logs.size <= 200) {
-                            ConsoleParse.lines(logs, state.tailParser)
+                    val logs = decodeLines(u.lines)
+                    // 实时尾部：最多几十行，直接在主线程解析（每行各用新的解析器，不碰 tailParser）
+                    val live = u.live?.let { ConsoleParse.live(decodeLines(it)) }
+                    var gap = false
+                    var behind = false
+                    if (logs.isNotEmpty()) {
+                        if (state.attached) {
+                            // 实时批次一般很小（服务器 100ms 合并一次），直接在主线程解析；输出很猛、一批很多行时放到后台线程
+                            // （collect 是一批一批顺序处理的，样式的先后不会乱）
+                            val parsed = if (logs.size <= 200) {
+                                ConsoleParse.lines(logs, state.tailParser)
+                            } else {
+                                withContext(Dispatchers.Default) { ConsoleParse.lines(logs, state.tailParser) }
+                            }
+                            gap = state.appendLive(parsed)
                         } else {
-                            withContext(Dispatchers.Default) { ConsoleParse.lines(logs, state.tailParser) }
+                            state.noteLatest(logs.last().seq)
+                            behind = state.follow
                         }
-                        if (state.appendLive(parsed)) scope.launch { catchUp(state, client, untilAttached = state.follow) }
-                    } else {
-                        state.noteLatest(logs.last().seq)
-                        if (state.follow) scope.launch { catchUp(state, client, untilAttached = true) }
                     }
+                    // 同一条消息：先追加已定型行，再整体替换实时尾部。两步之间没有挂起点，界面上是一次更新
+                    if (live != null) state.replaceLive(live)
+                    if (gap) scope.launch { catchUp(state, client, untilAttached = state.follow) }
+                    if (behind) scope.launch { catchUp(state, client, untilAttached = true) }
                 }
-                ConsoleStream.Update.Ended -> state.ended = true
+                ConsoleStream.Update.Ended -> state.markEnded()
                 is ConsoleStream.Update.Disconnected, ConsoleStream.Update.Connected -> {}
             }
         }
     }
+
+    private fun decodeLines(list: List<JsonObject>): List<LogLine> =
+        list.mapNotNull { runCatching { PaperplaneJson.decodeFromJsonElement(LogLine.serializer(), it) }.getOrNull() }
 
     /** 往前读一页 */
     suspend fun loadOlder(state: ConsoleState, api: OpCaller) {
@@ -380,14 +395,14 @@ fun ConsoleView(
                     color = c.textSecondary,
                     modifier = Modifier.align(Alignment.Center).padding(PaperTheme.spacing.xxl),
                 )
-                state.lines.isEmpty() && !state.hasOlder && !state.loadingNewer -> Text(
+                !state.hasContent && !state.hasOlder && !state.loadingNewer -> Text(
                     tr("mobile.console.empty"),
                     style = PaperTheme.typography.small,
                     color = c.textTertiary,
                     modifier = Modifier.align(Alignment.Center),
                 )
             }
-            if (!state.follow && state.lines.isNotEmpty()) {
+            if (!state.follow && state.hasContent) {
                 JumpToEndButton(
                     Modifier.align(Alignment.BottomEnd).padding(PaperTheme.spacing.lg),
                     onClick = {
@@ -406,9 +421,10 @@ fun ConsoleView(
     }
 }
 
+/** 滚到列表最底部（底部那一项：顶部一项 + 已定型行 + 实时尾部之后） */
 private suspend fun scrollToEnd(state: ConsoleState, listState: LazyListState) {
-    if (state.lines.isEmpty()) return
-    listState.scrollToItem(state.lines.size + 1)
+    if (!state.hasContent) return
+    listState.scrollToItem(state.rowCount + 1)
 }
 
 /** 跟随、往上 / 往下翻页 */
@@ -434,10 +450,10 @@ private fun ConsoleScrollEffects(state: ConsoleState, listState: LazyListState) 
             }
         }
     }
-    // 跟随时新行进来就贴到底部
+    // 跟随时新行进来（或实时尾部变化）就贴到底部
     LaunchedEffect(listState, state) {
         snapshotFlow { state.version to state.follow }.collect { (_, follow) ->
-            if (follow && !userScrolling.value && state.lines.isNotEmpty()) listState.scrollToItem(state.lines.size + 1)
+            if (follow && !userScrolling.value) scrollToEnd(state, listState)
         }
     }
     // 接近顶部：往前读
@@ -485,7 +501,7 @@ private fun ConsoleScrollEffects(state: ConsoleState, listState: LazyListState) 
 }
 
 /**
- * 搜索：输入停顿 150ms 后在已加载的行里找；换了搜索词时滚到最新的一处。
+ * 搜索：输入停顿 150ms 后在已加载的行和显示中的实时尾部里找；换了搜索词时滚到最新的一处。
  * 日志一直在刷时最多每 300ms 重算一次（conflate：忙的时候只留最新的变化，不会一直被打断而算不出来）。
  */
 @Composable
@@ -502,7 +518,7 @@ private fun ConsoleSearchEffect(state: ConsoleState, listState: LazyListState) {
                 delay(150)
                 if (state.query != q) return@collect // 还在输入
             }
-            val snapshot = state.lines.toList()
+            val snapshot = state.rowsSnapshot()
             // 行少时直接找，行多时放到后台线程
             val found = if (snapshot.size < 3000) ConsoleSearch.find(snapshot, q) else withContext(Dispatchers.Default) { ConsoleSearch.find(snapshot, q) }
             val changed = q != last
@@ -570,9 +586,9 @@ private fun ConsoleToolbar(
         }, active = state.follow)
         PaperMoreButton({
             listOf(
-                MenuEntry.Item(tr("mobile.console.copyLoaded"), icon = "copy", enabled = state.lines.isNotEmpty()) { copyText(state.selectedText()) },
-                MenuEntry.Item(tr("mobile.console.select"), icon = "text-cursor-input", enabled = state.lines.isNotEmpty()) {
-                    state.lines.lastOrNull()?.let { state.startSelection(it.seq) }
+                MenuEntry.Item(tr("mobile.console.copyLoaded"), icon = "copy", enabled = state.hasContent) { copyText(state.selectedText()) },
+                MenuEntry.Item(tr("mobile.console.select"), icon = "text-cursor-input", enabled = state.hasContent) {
+                    state.lastRow?.let { state.startSelection(it.seq) }
                 },
                 MenuEntry.Item(tr("mobile.console.jumpToStart"), icon = "arrow-up", enabled = state.consoleId != null, onClick = onJumpToStart),
                 MenuEntry.Divider,
@@ -647,23 +663,22 @@ private fun ConsoleLines(
     val charWidth = remember(style, density) { with(density) { measurer.measure("0", style).size.width.toDp() } }
     val hPad = PaperTheme.spacing.md
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val contentWidth = if (wrap) maxWidth else max(maxWidth, min(charWidth * state.maxWidth + hPad * 2 + 8.dp, 12000.dp))
+        val contentWidth = if (wrap) maxWidth else max(maxWidth, min(charWidth * state.contentWidth + hPad * 2 + 8.dp, 12000.dp))
         val hScroll = rememberScrollState()
         Box(Modifier.fillMaxSize().then(if (wrap) Modifier else Modifier.horizontalScroll(hScroll))) {
             LazyColumn(state = listState, modifier = Modifier.width(contentWidth).fillMaxHeight()) {
                 item(key = "head", contentType = "head") { ConsoleHead(state) }
+                // 已定型行之后是实时尾部（只在窗口接上最新时有）；两段的 seq 不重叠（实时行用界面编号），key 不会冲突
                 val lines = state.lines
-                items(count = lines.size, key = { lines[it].seq }, contentType = { "line" }) { i ->
-                    val line = lines[i]
-                    val ms = state.matchesBySeq[line.seq]
-                    val current = state.currentMatch?.takeIf { it.seq == line.seq }
+                val live = state.liveRows
+                val row: @Composable (ConsoleLine) -> Unit = { line ->
                     ConsoleRow(
                         line = line,
                         colors = c,
                         style = style,
                         wrap = wrap,
-                        matches = ms,
-                        current = current,
+                        matches = state.matchesBySeq[line.seq],
+                        current = state.currentMatch?.takeIf { it.seq == line.seq },
                         selected = state.isSelected(line.seq),
                         hPad = hPad,
                         onClick = { if (state.selecting) state.extendSelection(line.seq) },
@@ -671,6 +686,8 @@ private fun ConsoleLines(
                         onLink = onLink,
                     )
                 }
+                items(count = lines.size, key = { lines[it].seq }, contentType = { "line" }) { i -> row(lines[i]) }
+                items(count = live.size, key = { live[it].seq }, contentType = { "line" }) { i -> row(live[i]) }
                 item(key = "foot", contentType = "foot") {
                     Box(Modifier.fillMaxWidth().heightIn(min = PaperTheme.spacing.sm), contentAlignment = Alignment.Center) {
                         if (state.loadingNewer) PaperSpinner(Modifier.padding(PaperTheme.spacing.md), size = PaperTheme.sizes.iconSmall, tint = c.iconSecondary)
@@ -689,7 +706,7 @@ private fun ConsoleHead(state: ConsoleState) {
         when {
             state.loadingOlder || (state.hasOlder && state.lines.isNotEmpty()) ->
                 PaperSpinner(Modifier.padding(PaperTheme.spacing.md), size = PaperTheme.sizes.iconSmall, tint = c.iconSecondary)
-            state.initialized && state.lines.isNotEmpty() && state.floor == 0L ->
+            state.initialized && state.hasContent && !state.hasOlder && state.floor == 0L ->
                 Text(
                     tr("mobile.console.start"),
                     style = PaperTheme.typography.caption,

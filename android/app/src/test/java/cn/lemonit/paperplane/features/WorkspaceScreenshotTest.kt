@@ -192,6 +192,25 @@ class WorkspaceScreenshotTest {
         shot("2_run", mode) { RunTabContent(web, "c1", r, onSelect = {}, console = console) }
     }
 
+    /** 实时尾部（伪终端里原地刷新的进度条）接在已定型行后面，搜索命中也覆盖它 */
+    @Test fun runTabLiveTailLight() = runTabLiveTail(ThemeMode.Light)
+    @Test fun runTabLiveTailDark() = runTabLiveTail(ThemeMode.Dark)
+
+    private fun runTabLiveTail(mode: ThemeMode) {
+        seed()
+        fun l(text: String) = LogLine(0, now, "stdout", text)
+        val console = ConsoleState.preview(
+            consoleLines(),
+            live = listOf(
+                l("a1b2c3d4e5f6: \u001B[33mPushing\u001B[39m [=================>                 ]  23.4MB/45.6MB"),
+                l("f6e5d4c3b2a1: \u001B[32mPushed\u001B[39m"),
+                l("0123456789ab: \u001B[2mWaiting\u001B[22m"),
+            ),
+        )
+        console.query = "push"
+        shot("2_run_live", mode) { RunTabContent(web, "c1", run1, onSelect = {}, console = console) }
+    }
+
     @Test fun runningLight() {
         seed()
         val tasks = listOf(
